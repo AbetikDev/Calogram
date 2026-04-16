@@ -1,0 +1,463 @@
+/* ── Layout ── */
+main {
+    padding-top: 0;
+    padding-bottom: 90px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+/* ── Hero (dark top block) ── */
+.hero {
+    background: var(--hero_gradient);
+    padding: 72px 20px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero::after {
+    content: '';
+    position: absolute;
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(62,207,142,0.12) 0%, transparent 70%);
+    top: -60px;
+    right: -60px;
+    pointer-events: none;
+}
+
+/* ── Calorie card (inside hero) ── */
+.calorie-card {
+    background: transparent;
+    padding: 0;
+    box-shadow: none;
+}
+
+.calorie-sides {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.calorie-side {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+}
+
+.side-icon {
+    width: 28px;
+    height: 28px;
+    filter: invert(76%) sepia(38%) saturate(558%) hue-rotate(101deg) brightness(95%) contrast(93%);
+    opacity: 1;
+}
+
+.side-value {
+    font-size: 18px;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1;
+}
+
+.side-label {
+    font-size: 10px;
+    color: rgba(255,255,255,0.82);
+    font-weight: 500;
+}
+
+/* ── Calorie ring ── */
+.calorie-ring-wrap {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    flex-shrink: 0;
+}
+
+.calorie-ring {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.ring-bg {
+    fill: none;
+    stroke: rgba(255,255,255,0.1);
+    stroke-width: 10;
+}
+
+.ring-fill {
+    fill: none;
+    stroke: url(#ringGradient);
+    stroke-width: 10;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.8s cubic-bezier(.4,0,.2,1);
+}
+
+.ring-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+}
+
+
+
+.ring-goal {
+    font-size: 11px;
+    color: rgba(255,255,255,0.75);
+    font-weight: 500;
+}
+
+/* ── Quick actions ── */
+.quick-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+}
+
+.action-btn {
+    flex: 1;
+    height: 46px;
+    border: none;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease;
+    backdrop-filter: blur(4px);
+}
+
+.action-btn:active {
+    transform: scale(0.92);
+    background: rgba(255,255,255,0.18);
+}
+
+.action-btn img {
+    width: 22px;
+    height: 22px;
+    filter: brightness(0) invert(1);
+    opacity: 0.85;
+}
+
+/* ── Cards section (white area) ── */
+.cards-section {
+    background: var(--bg_color);
+    border-radius: 28px 28px 0 0;
+    margin-top: -20px;
+    padding: 20px 16px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    z-index: 2;
+}
+
+/* ── Nutrients card ── */
+.nutrients-card {
+    background: var(--card_color);
+    border-radius: 20px;
+    padding: 16px;
+    box-shadow: var(--card_shadow);
+}
+
+.nutrients-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.nutrients-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text_color);
+}
+
+.nutrients-info {
+    width: 18px;
+    height: 18px;
+    opacity: 0.35;
+    filter: brightness(0);
+}
+
+.nutrients-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.nutrient {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.nutrient-name {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text_muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.nutrient-ring-wrap {
+    position: relative;
+    width: 72px;
+    height: 72px;
+}
+
+.nutrient-ring {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.n-ring-bg {
+    fill: none;
+    stroke: #eef1f5;
+    stroke-width: 6;
+}
+
+.n-ring-fill {
+    fill: none;
+    stroke-width: 6;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.7s cubic-bezier(.4,0,.2,1);
+}
+
+.n-ring-fill.protein { stroke: var(--protein_color); }
+.n-ring-fill.carbs   { stroke: var(--carbs_color); }
+.n-ring-fill.fat     { stroke: var(--fat_color); }
+.n-ring-fill.water   { stroke: var(--water_color); }
+
+.nutrient-percent {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--text_color);
+}
+
+.nutrient-value {
+    font-size: 13px;
+    color: var(--text_color);
+    line-height: 1;
+}
+
+.nutrient-value b {
+    font-weight: 700;
+}
+
+.nutrient-goal {
+    font-size: 10px;
+    color: var(--text_muted);
+}
+
+/* ── Calorie ring ── */
+.calorie-ring-wrap {
+    position: relative;
+    width: 130px;
+    height: 130px;
+    flex-shrink: 0;
+}
+
+.calorie-ring {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.ring-bg {
+    fill: none;
+    stroke: #eef1f5;
+    stroke-width: 10;
+}
+
+.ring-fill {
+    fill: none;
+    stroke: url(#ringGradient);
+    stroke-width: 10;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.8s cubic-bezier(.4,0,.2,1);
+}
+
+.ring-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+}
+
+.ring-percent {
+    font-size: 22px;
+    font-weight: 800;
+    color: white;
+    line-height: 1;
+}
+
+.ring-goal {
+    font-size: 11px;
+    color: var(--text_muted);
+    font-weight: 500;
+}
+
+/* ── Quick actions ── */
+.quick-actions {
+    margin: 0 16px;
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+}
+
+.action-btn {
+    flex: 1;
+    height: 52px;
+    border: none;
+    border-radius: 16px;
+    background: var(--card_color);
+    box-shadow: var(--card_shadow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.action-btn:active {
+    transform: scale(0.93);
+    box-shadow: none;
+}
+
+.action-btn img {
+    width: 24px;
+    height: 24px;
+    filter: brightness(0) saturate(100%) invert(64%) sepia(60%) saturate(400%) hue-rotate(100deg) brightness(95%);
+}
+
+/* ── Nutrients card ── */
+.nutrients-card {
+    margin: 0 16px;
+    background: var(--card_color);
+    border-radius: 24px;
+    padding: 16px;
+    box-shadow: var(--card_shadow);
+}
+
+.nutrients-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.nutrients-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text_color);
+}
+
+.nutrients-info {
+    width: 18px;
+    height: 18px;
+    opacity: 0.4;
+    filter: brightness(0);
+}
+
+.nutrients-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.nutrient {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.nutrient-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text_muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.nutrient-ring-wrap {
+    position: relative;
+    width: 68px;
+    height: 68px;
+}
+
+.nutrient-ring {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.n-ring-bg {
+    fill: none;
+    stroke: #eef1f5;
+    stroke-width: 6;
+}
+
+.n-ring-fill {
+    fill: none;
+    stroke-width: 6;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.7s cubic-bezier(.4,0,.2,1);
+}
+
+.n-ring-fill.protein { stroke: var(--protein_color); }
+.n-ring-fill.carbs   { stroke: var(--carbs_color); }
+.n-ring-fill.fat     { stroke: var(--fat_color); }
+.n-ring-fill.water   { stroke: var(--water_color); }
+
+.nutrient-percent {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--text_color);
+}
+
+.nutrient-value {
+    font-size: 13px;
+    color: var(--text_color);
+    line-height: 1;
+}
+
+.nutrient-value b {
+    font-weight: 700;
+}
+
+.nutrient-goal {
+    font-size: 10px;
+    color: var(--text_muted);
+}
+
+/* SVG gradient def (injected inline) */

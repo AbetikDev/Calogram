@@ -1,0 +1,37 @@
+:root {
+    --bg_color: #f0f4f8;
+    --card_color: #ffffff;
+
+    --text_color: #1c2635;
+    --text_color_w: #ffffff;
+    --text_muted: #8a95a3;
+    --text_color_muted: rgba(255, 255, 255, 0.72);
+
+    --accent_color: #3ecf8e;
+    --accent_dark:  #1aab6d;
+    --accent_gradient: linear-gradient(135deg, #3ecf8e 0%, #1aab6d 100%);
+
+    --hero_gradient: linear-gradient(160deg, #1a3a2e 0%, #0f2a20 55%, #163322 100%);
+
+    --protein_color: #5b8cff;
+    --carbs_color:   #ff9f43;
+    --fat_color:     #ff6b6b;
+    --water_color:   #54a0ff;
+
+    --border_color: rgba(255, 255, 255, 0.12);
+    --shadow_color: rgba(30, 130, 90, 0.18);
+    --card_shadow: 0 4px 24px rgba(28, 38, 53, 0.08);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body, html {
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg_color);
+    color: var(--text_color);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }

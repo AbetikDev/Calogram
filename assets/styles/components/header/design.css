@@ -1,0 +1,69 @@
+header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 52px;
+    width: 100%;
+    background: transparent;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    z-index: 1000;
+    box-sizing: border-box;
+}
+
+.app_name {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text_color_w);
+    margin: 0;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+}
+
+.days {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--text_color_w);
+    transition: opacity 0.2s ease;
+}
+
+.days:hover { opacity: 0.75; }
+
+.days_img {
+    width: 20px;
+    height: auto;
+    filter: brightness(0) invert(1);
+}
+
+.calc_days {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text_color_w);
+}
+
+.date {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--text_color_w);
+    transition: opacity 0.2s ease;
+}
+
+.date:hover { opacity: 0.75; }
+
+.calendar {
+    width: 16px;
+    height: auto;
+    filter: brightness(0) invert(1);
+}
+
+.date_text {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text_color_w);
+}

@@ -1,0 +1,110 @@
+footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    background: var(--accent_gradient);
+    z-index: 1000;
+    box-shadow: 0 -4px 20px var(--shadow_color);
+    padding-bottom: env(safe-area-inset-bottom);
+    border-radius: 20px 20px 0 0;
+    border-top: 1px solid var(--border_color);
+}
+
+footer nav {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    padding: 6px 0 2px;
+}
+
+.nav-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 10px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    flex: 1;
+    color: var(--text_color_muted);
+    transition: color 0.2s ease;
+    gap: 3px;
+}
+
+.nav-link span {
+    color: inherit;
+}
+
+.nav-link.active {
+    color: var(--text_color_w);
+}
+
+.nav-link.active .nav_img {
+    opacity: 1;
+    transform: translateY(-1px);
+}
+
+.nav-link:hover {
+    color: var(--text_color_w);
+}
+
+/* Center ADD button */
+.nav-link--add {
+    position: relative;
+}
+
+.add-circle {
+    width: 52px;
+    height: 52px;
+    background: var(--card_color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+    margin-top: -20px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.nav-link--add:hover .add-circle {
+    transform: scale(1.1) translateY(-2px);
+    box-shadow: 0 6px 22px rgba(0,0,0,0.22);
+}
+
+.nav-link--add:active .add-circle {
+    transform: scale(0.93);
+}
+
+.nav-link--add .nav_img {
+    width: 24px;
+    height: 24px;
+    background: none;
+    border-radius: 0;
+    padding: 0;
+    filter: brightness(0) !important;
+    opacity: 0.75 !important;
+    box-shadow: none;
+    margin-top: 0;
+}
+
+.nav_img {
+    width: 24px;
+    height: auto;
+    display: block;
+    filter: brightness(0) invert(1);
+    opacity: 0.65;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.nav-link:hover .nav_img {
+    transform: scale(1.15) translateY(-2px);
+    opacity: 1;
+}
+
+.nav-link:active .nav_img {
+    transform: scale(0.92);
+}

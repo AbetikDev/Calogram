@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calogram</title>
+    <link rel="stylesheet" href="assets/styles/main.css">
+    <link rel="icon" href="assets/images/favicon.png" type="image/png">
+    <script type="module" src="assets/scripts/main.js"></script>
+</head>
+<body>
+
+    <header>
+        <a class="days" href="#" id="days_icon">
+            <img class="days_img" src="assets/images/components/interface/medal1.svg" alt="streak">
+            <span class="calc_days" id="active_days">0</span>
+        </a>
+        <h3 class="app_name">CALOGRAM</h3>
+        <a class="date" href="#" id="today_date">
+            <img class="calendar" src="assets/images/components/interface/calendar.svg" alt="date">
+            <span class="date_text" id="today_date_text">00.00</span>
+        </a>
+    </header>
+
+    <main>
+
+        <!-- Hero dark block -->
+        <section class="hero">
+
+            <!-- Week strip -->
+            <div class="week-days">
+                <div class="day" id="day_1"><span class="day_name">Пн</span><div class="day_circle"><span class="day_date">0</span></div></div>
+                <div class="day" id="day_2"><span class="day_name">Вт</span><div class="day_circle"><span class="day_date">0</span></div></div>
+                <div class="day" id="day_3"><span class="day_name">Ср</span><div class="day_circle"><span class="day_date">0</span></div></div>
+                <div class="day" id="day_4"><span class="day_name">Чт</span><div class="day_circle"><span class="day_date">0</span></div></div>
+                <div class="day" id="day_5"><span class="day_name">Пт</span><div class="day_circle"><span class="day_date">0</span></div></div>
+                <div class="day" id="day_6"><span class="day_name">Сб</span><div class="day_circle"><span class="day_date">0</span></div></div>
+                <div class="day" id="day_7"><span class="day_name">Нд</span><div class="day_circle"><span class="day_date">0</span></div></div>
+            </div>
+
+            <!-- Calorie ring -->
+            <section class="calorie-card">
+                <div class="calorie-sides">
+                    <div class="calorie-side">
+                        <img src="assets/images/components/interface/food1.svg" alt="food" class="side-icon">
+                        <span class="side-value" id="consumed_kcal">0</span>
+                        <span class="side-label">Спожито</span>
+                    </div>
+                    <div class="calorie-ring-wrap">
+                        <svg class="calorie-ring" viewBox="0 0 120 120">
+                            <circle class="ring-bg" cx="60" cy="60" r="50"/>
+                            <circle class="ring-fill" id="ring_fill" cx="60" cy="60" r="50"
+                                stroke-dasharray="314"
+                                stroke-dashoffset="314"/>
+                        </svg>
+                        <div class="ring-center">
+                            <span class="ring-percent" id="ring_percent">0%</span>
+                            <span class="ring-goal" id="ring_goal">/ 2000</span>
+                        </div>
+                    </div>
+                    <div class="calorie-side">
+                        <img src="assets/images/components/interface/run.svg" alt="activity" class="side-icon">
+                        <span class="side-value" id="activity_kcal">0</span>
+                        <span class="side-label">Активність</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Quick actions -->
+            <section class="quick-actions">
+                <button class="action-btn" id="btn_add">
+                    <img src="assets/images/components/interface/plass.svg" alt="add">
+                </button>
+                <button class="action-btn" id="btn_scan">
+                    <img src="assets/images/components/interface/qr-code.svg" alt="scan">
+                </button>
+                <button class="action-btn" id="btn_camera">
+                    <img src="assets/images/components/interface/camera.svg" alt="camera">
+                </button>
+                <button class="action-btn" id="btn_activity">
+                    <img src="assets/images/components/interface/fit.svg" alt="activity">
+                </button>
+            </section>
+
+        </section>
+        <!-- /Hero -->
+
+        <!-- Light cards -->
+        <div class="cards-section">
+
+            <!-- Nutrients -->
+            <section class="nutrients-card">
+                <div class="nutrients-header">
+                    <span class="nutrients-title">Поживні речовини</span>
+                    <img src="assets/images/components/interface/info.svg" alt="info" class="nutrients-info">
+                </div>
+                <div class="nutrients-grid">
+                    <div class="nutrient">
+                        <span class="nutrient-name">Білки</span>
+                        <div class="nutrient-ring-wrap">
+                            <svg class="nutrient-ring" viewBox="0 0 60 60">
+                                <circle class="n-ring-bg" cx="30" cy="30" r="24"/>
+                                <circle class="n-ring-fill protein" id="n_protein" cx="30" cy="30" r="24"
+                                    stroke-dasharray="150.8" stroke-dashoffset="150.8"/>
+                            </svg>
+                            <span class="nutrient-percent" id="np_protein">0%</span>
+                        </div>
+                        <span class="nutrient-value"><b id="nv_protein">0</b> г</span>
+                        <span class="nutrient-goal" id="ng_protein">з 0 г</span>
+                    </div>
+                    <div class="nutrient">
+                        <span class="nutrient-name">Вуглеводи</span>
+                        <div class="nutrient-ring-wrap">
+                            <svg class="nutrient-ring" viewBox="0 0 60 60">
+                                <circle class="n-ring-bg" cx="30" cy="30" r="24"/>
+                                <circle class="n-ring-fill carbs" id="n_carbs" cx="30" cy="30" r="24"
+                                    stroke-dasharray="150.8" stroke-dashoffset="150.8"/>
+                            </svg>
+                            <span class="nutrient-percent" id="np_carbs">0%</span>
+                        </div>
+                        <span class="nutrient-value"><b id="nv_carbs">0</b> г</span>
+                        <span class="nutrient-goal" id="ng_carbs">з 0 г</span>
+                    </div>
+                    <div class="nutrient">
+                        <span class="nutrient-name">Жири</span>
+                        <div class="nutrient-ring-wrap">
+                            <svg class="nutrient-ring" viewBox="0 0 60 60">
+                                <circle class="n-ring-bg" cx="30" cy="30" r="24"/>
+                                <circle class="n-ring-fill fat" id="n_fat" cx="30" cy="30" r="24"
+                                    stroke-dasharray="150.8" stroke-dashoffset="150.8"/>
+                            </svg>
+                            <span class="nutrient-percent" id="np_fat">0%</span>
+                        </div>
+                        <span class="nutrient-value"><b id="nv_fat">0</b> г</span>
+                        <span class="nutrient-goal" id="ng_fat">з 0 г</span>
+                    </div>
+                    <div class="nutrient">
+                        <span class="nutrient-name">Вода</span>
+                        <div class="nutrient-ring-wrap">
+                            <svg class="nutrient-ring" viewBox="0 0 60 60">
+                                <circle class="n-ring-bg" cx="30" cy="30" r="24"/>
+                                <circle class="n-ring-fill water" id="n_water" cx="30" cy="30" r="24"
+                                    stroke-dasharray="150.8" stroke-dashoffset="150.8"/>
+                            </svg>
+                            <span class="nutrient-percent" id="np_water">0%</span>
+                        </div>
+                        <span class="nutrient-value"><b id="nv_water">0</b> мл</span>
+                        <span class="nutrient-goal" id="ng_water">з 0 мл</span>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+    </main>
+
+    <footer>
+        <nav>
+            <a class="nav-link active" href="#home">
+                <img class="nav_img" src="assets/images/components/interface/home.svg" alt="home">
+                <span>Головна</span>
+            </a>
+            <a class="nav-link" href="#stats">
+                <img class="nav_img" src="assets/images/components/interface/stats.svg" alt="stats">
+                <span>Статистика</span>
+            </a>
+            <a class="nav-link nav-link--add" href="#new">
+                <div class="add-circle">
+                    <img class="nav_img" src="assets/images/components/interface/plass.svg" alt="new">
+                </div>
+            </a>
+            <a class="nav-link" href="#food">
+                <img class="nav_img" src="assets/images/components/interface/food.svg" alt="food">
+                <span>Їжа</span>
+            </a>
+            <a class="nav-link" href="#profile">
+                <img class="nav_img" src="assets/images/components/interface/user.svg" alt="profile">
+                <span>Профіль</span>
+            </a>
+        </nav>
+    </footer>
+
+</body>
+</html>
