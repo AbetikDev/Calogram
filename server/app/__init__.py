@@ -82,6 +82,10 @@ def create_app(frontend_root=None):
 
         @app.route('/<path:path>')
         def serve_catchall(path):
+            # Never intercept API routes — let Flask blueprints handle them
+            if path.startswith('api/'):
+                from flask import abort
+                abort(404)
             fp = os.path.join(frontend_root, path)
             if os.path.isfile(fp):
                 return send_from_directory(frontend_root, path)
