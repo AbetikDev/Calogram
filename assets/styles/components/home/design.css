@@ -679,7 +679,7 @@
     .cards-area {
         padding-left: 10px;
         padding-right: 10px;
-        padding-bottom: 102px;
+        padding-bottom: calc(102px + env(safe-area-inset-bottom));
     }
 
     .nutrients-grid {

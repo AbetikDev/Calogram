@@ -112,7 +112,7 @@ body.dashboard {
     border-radius: 12px;
     background: var(--card_color);
     color: var(--text_color);
-    font-size: 14px;
+    font-size: 16px;
     outline: none;
     box-sizing: border-box;
 }
@@ -386,9 +386,10 @@ body.dashboard {
     padding: 14px 18px 30px;
     max-height: 92dvh;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     animation: slideUp .28s ease;
     margin: 0 auto;
-    touch-action: none;
+    touch-action: pan-y;
     will-change: transform;
     transition: transform .22s ease, max-height .22s ease, border-radius .22s ease;
 }
@@ -576,7 +577,7 @@ body.dashboard {
     border-radius: 10px;
     background: var(--bg_color);
     color: var(--text_color);
-    font-size: 14px;
+    font-size: 16px;
     outline: none;
     box-sizing: border-box;
     width: 100%;
@@ -1188,4 +1189,142 @@ body.dashboard {
         font-size: 9px;
         padding: 4px 7px;
     }
+
+    /* iOS: prevent input zoom */
+    .form-field input,
+    .form-field select,
+    .food-search,
+    .qty-input {
+        font-size: 16px !important;
+    }
+
+    /* Safe-area bottom padding */
+    .tab-panel {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .modal-overlay {
+        padding-bottom: calc(env(safe-area-inset-bottom) + 8px);
+    }
+
+    /* Larger touch targets */
+    .qty-btn {
+        width: 44px;
+        height: 44px;
+    }
+
+    .meal-chip {
+        padding: 8px 14px;
+        min-height: 36px;
+    }
+
+    .food-fav-btn {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+/* Extra small screens (< 375px) */
+@media (max-width: 374px) {
+    .nutrients-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 10px;
+    }
+
+    .quick-actions {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .action-btn {
+        min-height: 50px;
+        border-radius: 14px;
+    }
+
+    .profile-stats {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .profile-stat-val {
+        font-size: 16px;
+    }
+
+    .stats-highlight-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Activity modal ───────────────────────────────────────────────────────── */
+.activity-section-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text_muted);
+    margin: 12px 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.activity-presets-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+    max-height: 260px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.activity-preset-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 8px;
+    background: var(--card_bg, #f4f7fa);
+    border: 2px solid transparent;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+.activity-preset-btn.active,
+.activity-preset-btn:hover {
+    border-color: var(--accent_color);
+    background: rgba(var(--accent_rgb, 58, 134, 255), 0.08);
+}
+
+.activity-preset-emoji {
+    font-size: 26px;
+    line-height: 1;
+}
+
+.activity-preset-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text_color);
+    text-align: center;
+}
+
+.activity-preset-kcal {
+    font-size: 10px;
+    color: var(--text_muted);
+    font-weight: 500;
+}
+
+.activity-selected-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text_color);
+    padding: 10px 0 4px;
+}
+
+.activity-kcal-preview {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--accent_color);
+    text-align: center;
+    padding: 10px 0 14px;
 }

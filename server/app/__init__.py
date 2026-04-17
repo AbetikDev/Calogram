@@ -9,6 +9,7 @@ from .database import init_db
 from .routes.auth import auth_bp
 from .routes.user import user_bp
 from .routes.food import food_bp
+from .routes.activity import activity_bp
 
 
 def create_app(frontend_root=None):
@@ -61,6 +62,7 @@ def create_app(frontend_root=None):
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(user_bp, url_prefix='/api/user')
     app.register_blueprint(food_bp, url_prefix='/api/food')
+    app.register_blueprint(activity_bp, url_prefix='/api/activity')
 
     @app.route('/api/ping')
     def ping():

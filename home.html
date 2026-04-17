@@ -115,7 +115,7 @@
             <button class="action-btn">
                 <img src="assets/images/components/interface/camera.svg" alt="photo">
             </button>
-            <button class="action-btn">
+            <button class="action-btn" onclick="openActivityModal()">
                 <img src="assets/images/components/interface/fit.svg" alt="activity">
             </button>
         </div>
@@ -543,6 +543,29 @@
     </div>
 </div>
 
+<!-- ══════ MODAL: ACTIVITY ══════ -->
+<div class="modal-overlay" id="modal-activity" onclick="closeModalIfOverlay(event,'modal-activity')">
+    <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-title">Активність</div>
+        <div id="activity-today-log"></div>
+        <div class="activity-section-label">Швидке додавання</div>
+        <div class="activity-presets-grid" id="activity-presets"></div>
+        <div id="activity-selected" style="display:none;">
+            <div class="activity-selected-name" id="activity-name-display">—</div>
+            <div class="activity-section-label">Тривалість (хвилини)</div>
+            <div class="qty-row">
+                <button class="qty-btn" type="button" onclick="changeActivityDuration(-5)">&#8722;</button>
+                <input class="qty-input" id="activity-duration" type="number" value="30" min="1" max="300" oninput="updateActivityCalc()">
+                <span style="font-size:13px;color:var(--text_muted);font-weight:600;">хв</span>
+                <button class="qty-btn" type="button" onclick="changeActivityDuration(5)">+</button>
+            </div>
+            <div class="activity-kcal-preview" id="activity-kcal-preview">≈ 0 kcal витрачено</div>
+            <button class="btn-main" id="activity-add-btn" onclick="confirmAddActivity()">Додати активність</button>
+        </div>
+    </div>
+</div>
+
 <script>
 const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? `http://${window.location.hostname}:28016/api`
@@ -557,6 +580,22 @@ let favoriteFoods = [];
 let recentFoods = [];
 let selectedDate = new Date().toISOString().slice(0, 10);
 const TODAY = new Date().toISOString().slice(0, 10);
+let activityLog = [];
+let selectedActivity = null;
+const ACTIVITY_PRESETS = [
+    {id:'walking',    name:'Ходьба',          kcal_per_min:4,  emoji:'🚶'},
+    {id:'running',    name:'Біг',              kcal_per_min:10, emoji:'🏃'},
+    {id:'cycling',    name:'Велосипед',        kcal_per_min:8,  emoji:'🚴'},
+    {id:'swimming',   name:'Плавання',         kcal_per_min:8,  emoji:'🏔️'},
+    {id:'gym',        name:'Тренажерний зал',  kcal_per_min:6,  emoji:'🏋️'},
+    {id:'yoga',       name:'Йога',              kcal_per_min:3,  emoji:'🧘'},
+    {id:'dancing',    name:'Танці',             kcal_per_min:5,  emoji:'💃'},
+    {id:'football',   name:'Футбол',           kcal_per_min:9,  emoji:'⚽'},
+    {id:'hiit',       name:'HIIT',              kcal_per_min:12, emoji:'🔥'},
+    {id:'stretching', name:'Розтяжка',          kcal_per_min:2,  emoji:'🤸'},
+    {id:'basketball', name:'Баскетбол',        kcal_per_min:8,  emoji:'🏀'},
+    {id:'boxing',     name:'Бокс',              kcal_per_min:11, emoji:'🥊'},
+];
 const CIRC_MAIN = 314;   // 2*pi*50
 const CIRC_NUT  = 175.9; // 2*pi*28
 const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -653,11 +692,13 @@ async function selectDay(index) {
 
 // ── Load today ───────────────────────────────────────────────
 async function loadToday() {
-    const [stats, log] = await Promise.all([
+    const [stats, log, actLog] = await Promise.all([
         api('GET', '/food/stats?date=' + selectedDate),
-        api('GET', '/food/log?date='+  selectedDate)
+        api('GET', '/food/log?date='+  selectedDate),
+        api('GET', '/activity/log?date=' + selectedDate)
     ]);
     todayLog = log;
+    activityLog = Array.isArray(actLog) ? actLog : [];
     const kcal = Math.round(stats.calories || 0);
     const goal = stats.calorie_goal || 2000;
     const pct  = Math.round(kcal / goal * 100);
@@ -667,7 +708,7 @@ async function loadToday() {
     document.getElementById('ring_kcal').textContent      = kcal;
     document.getElementById('ring_goal_num').textContent  = goal;
     document.getElementById('consumed_kcal').textContent  = kcal;
-    const activity = Math.max(0, Math.round(todayLog.length * 35));
+    const activity = Math.round(activityLog.reduce((s, a) => s + (a.calories_burned || 0), 0));
     const activityEl = document.getElementById('activity_kcal');
     activityEl.textContent = activity;
     activityEl.classList.remove('activity-low', 'activity-mid', 'activity-high', 'activity-max');
@@ -745,8 +786,9 @@ function getDefaultFoodQty(food) {
 
 function getQtyStep(food) {
     if (!food) return 10;
-    if (food.unit === 'pcs') return 1;
-    return food.unit === 'ml' ? 50 : 10;
+    if (food.unit === 'pcs' || food.unit === 'шт') return 1;
+    if (food.unit === 'ml' || food.unit === 'мл') return 50;
+    return 10;
 }
 
 function getFoodStoreKey(suffix) {
@@ -1048,14 +1090,27 @@ function handleModalSearch(q) {
             </div>
         </div>`).join('');
 }
+function getDisplayUnit(food) {
+    if (!food) return 'г';
+    if (food.unit === 'ml' || food.unit === 'мл') return 'мл';
+    // For gram-based and piece-based foods, always show grams
+    return 'г';
+}
+function getDisplayQty(food) {
+    if (!food) return 100;
+    if (food.unit === 'ml' || food.unit === 'мл') return food.default_qty || food.unit_weight || 200;
+    // Always use gram-based default: unit_weight for pieces, or 100 for others
+    if (food.unit === 'шт' || food.unit === 'pcs') return food.unit_weight || 100;
+    return food.default_qty || food.unit_weight || 100;
+}
 function selectFoodForLog(food) {
     selectedFood = food;
     document.getElementById('modal-food-results').innerHTML = '';
     document.getElementById('modal-food-search').value = food.name;
     document.getElementById('modal-selected-food').style.display = 'block';
     document.getElementById('modal-food-name').textContent = food.name;
-    document.getElementById('modal-qty').value = getDefaultFoodQty(food);
-    document.getElementById('modal-qty-unit').textContent = food.unit;
+    document.getElementById('modal-qty').value = getDisplayQty(food);
+    document.getElementById('modal-qty-unit').textContent = getDisplayUnit(food);
     updateMacroPreview();
 }
 function updateMacroPreview() {
@@ -1323,6 +1378,105 @@ function renderProfile() {
     renderAvatarButton('hero_avatar', avatar, name);
 }
 
+// ── Activity ──────────────────────────────────────────────────
+async function openActivityModal() {
+    selectedActivity = null;
+    document.getElementById('activity-selected').style.display = 'none';
+    document.querySelectorAll('.activity-preset-btn').forEach(b => b.classList.remove('active'));
+    const presetsEl = document.getElementById('activity-presets');
+    presetsEl.innerHTML = ACTIVITY_PRESETS.map(a => `
+        <button class="activity-preset-btn" type="button" onclick="selectActivity(${JSON.stringify(a).replace(/"/g,'&quot;')})">
+            <span class="activity-preset-emoji">${a.emoji}</span>
+            <span class="activity-preset-name">${a.name}</span>
+            <span class="activity-preset-kcal">${a.kcal_per_min} kcal/min</span>
+        </button>`).join('');
+    await renderActivityLog();
+    const overlay = document.getElementById('modal-activity');
+    const sheet = overlay.querySelector('.modal-sheet');
+    sheet.classList.remove('expanded', 'mid', 'peek', 'dragging');
+    sheet.classList.add('peek');
+    sheet.style.transform = 'translateY(0)';
+    sheet.dataset.translateY = '0';
+    sheet.dataset.sheetMode = 'peek';
+    overlay.classList.add('open');
+}
+
+async function renderActivityLog() {
+    const log = await api('GET', '/activity/log?date=' + selectedDate);
+    activityLog = Array.isArray(log) ? log : [];
+    const total = Math.round(activityLog.reduce((s, a) => s + (a.calories_burned || 0), 0));
+    const actEl = document.getElementById('activity_kcal');
+    if (actEl) { actEl.textContent = total; }
+    const el = document.getElementById('activity-today-log');
+    if (!el) return;
+    if (!activityLog.length) {
+        el.innerHTML = '<div class="log-empty" style="margin-bottom:12px;">Активність ще не додана</div>';
+        return;
+    }
+    el.innerHTML = `
+        <div class="activity-section-label">Сьогодні</div>
+        ${activityLog.map(a => `
+            <div class="log-item" style="margin-bottom:6px;">
+                <div class="log-item-info">
+                    <div class="log-item-name">${a.emoji || '🏃'} ${a.name}</div>
+                    <div class="log-item-qty">${a.duration_min} хв</div>
+                </div>
+                <div class="log-item-kcal">${Math.round(a.calories_burned)} kcal</div>
+                <button class="log-item-del" type="button" onclick="deleteActivity(${a.id})">&#215;</button>
+            </div>`).join('')}
+        <div style="padding:6px 0 10px;font-size:13px;font-weight:700;color:var(--text_muted);text-align:right;">Всього: ${total} kcal</div>`;
+}
+
+function selectActivity(activity) {
+    selectedActivity = activity;
+    document.querySelectorAll('.activity-preset-btn').forEach(b => b.classList.remove('active'));
+    const btn = document.querySelector(`.activity-preset-btn[onclick*='"id":"${activity.id}"']`);
+    if (btn) btn.classList.add('active');
+    document.getElementById('activity-name-display').textContent = activity.emoji + ' ' + activity.name;
+    document.getElementById('activity-duration').value = 30;
+    updateActivityCalc();
+    document.getElementById('activity-selected').style.display = 'block';
+}
+
+function changeActivityDuration(delta) {
+    const inp = document.getElementById('activity-duration');
+    inp.value = Math.max(1, Math.min(300, (parseInt(inp.value) || 0) + delta));
+    updateActivityCalc();
+}
+
+function updateActivityCalc() {
+    if (!selectedActivity) return;
+    const dur = parseInt(document.getElementById('activity-duration').value) || 0;
+    const kcal = Math.round(selectedActivity.kcal_per_min * dur);
+    document.getElementById('activity-kcal-preview').textContent = `≈ ${kcal} kcal витрачено`;
+}
+
+async function confirmAddActivity() {
+    if (!selectedActivity) return;
+    const dur = parseInt(document.getElementById('activity-duration').value) || 0;
+    const kcal = Math.round(selectedActivity.kcal_per_min * dur);
+    const btn = document.getElementById('activity-add-btn');
+    btn.disabled = true; btn.textContent = 'Додаємо...';
+    await api('POST', '/activity/log', {
+        name: selectedActivity.name,
+        emoji: selectedActivity.emoji,
+        calories_burned: kcal,
+        duration_min: dur,
+        activity_type: selectedActivity.id,
+        date: selectedDate
+    });
+    btn.disabled = false; btn.textContent = 'Додати активність';
+    selectedActivity = null;
+    document.getElementById('activity-selected').style.display = 'none';
+    document.querySelectorAll('.activity-preset-btn').forEach(b => b.classList.remove('active'));
+    await renderActivityLog();
+}
+
+async function deleteActivity(id) {
+    await api('DELETE', '/activity/log/' + id);
+    await renderActivityLog();
+}
+
 // ── Modals ────────────────────────────────────────────────────
 function closeModal(id) {
     const overlay = document.getElementById(id);
@@ -1343,13 +1497,15 @@ function setupModalSheets() {
     document.querySelectorAll('.modal-overlay').forEach(overlay => {
         const sheet = overlay.querySelector('.modal-sheet');
         const handle = overlay.querySelector('.modal-handle');
-        if (!sheet || !handle || sheet.dataset.dragReady === '1') return;
+        if (!sheet || sheet.dataset.dragReady === '1') return;
         sheet.dataset.dragReady = '1';
 
         let dragging = false;
         let startY = 0;
         let startTranslate = 0;
-        let startMode = 'peek';
+        let lastY = 0;
+        let lastTime = 0;
+        let velocity = 0;
 
         const applyMode = mode => {
             sheet.classList.remove('peek', 'mid', 'expanded');
@@ -1366,19 +1522,58 @@ function setupModalSheets() {
             sheet.style.transform = `translateY(${next}px)`;
         };
 
-        handle.addEventListener('pointerdown', e => {
+        // Determine if touch started on a scrollable area that has scrollable content
+        const isScrollableContent = el => {
+            if (!el) return false;
+            let node = el;
+            while (node && node !== sheet) {
+                const style = getComputedStyle(node);
+                const overflow = style.overflow + style.overflowY;
+                if (overflow.includes('scroll') || overflow.includes('auto')) {
+                    if (node.scrollHeight > node.clientHeight) return true;
+                }
+                node = node.parentElement;
+            }
+            return false;
+        };
+
+        // Drag can start from handle or from the top area of the sheet (non-scrollable)
+        const canStartDrag = el => {
+            if (!el) return false;
+            if (el === handle || handle.contains(el)) return true;
+            // Also allow drag from modal-title and modal-food-preview areas
+            if (el.classList.contains('modal-title') || el.closest('.modal-title')) return true;
+            if (el.classList.contains('modal-sheet') && el === sheet) return true;
+            return false;
+        };
+
+        sheet.addEventListener('pointerdown', e => {
+            if (!canStartDrag(e.target)) return;
             dragging = true;
             startY = e.clientY;
+            lastY = e.clientY;
+            lastTime = Date.now();
+            velocity = 0;
             startTranslate = getTranslate();
-            startMode = sheet.dataset.sheetMode || 'peek';
             sheet.classList.add('dragging');
-            handle.setPointerCapture?.(e.pointerId);
+            sheet.setPointerCapture?.(e.pointerId);
         });
 
-        overlay.addEventListener('pointermove', e => {
+        sheet.addEventListener('pointermove', e => {
             if (!dragging) return;
             const delta = e.clientY - startY;
-            setTranslate(startTranslate + delta);
+            // Only allow downward drag (dismiss), slight resistance for upward
+            if (delta < 0) {
+                setTranslate(startTranslate + delta * 0.15);
+            } else {
+                setTranslate(startTranslate + delta);
+            }
+            // Track velocity
+            const now = Date.now();
+            const dt = now - lastTime;
+            if (dt > 0) velocity = (e.clientY - lastY) / dt;
+            lastY = e.clientY;
+            lastTime = now;
         });
 
         const finishDrag = () => {
@@ -1386,25 +1581,19 @@ function setupModalSheets() {
             dragging = false;
             sheet.classList.remove('dragging');
             const current = getTranslate();
-            if (current > 220) {
+            // Fast downward flick closes modal
+            if (velocity > 0.8 || current > 200) {
                 closeModal(overlay.id);
                 setTranslate(0);
                 return;
             }
-            if (current < 24) {
-                applyMode('expanded');
-            } else if (current < 96) {
-                applyMode(startMode === 'expanded' ? 'mid' : 'expanded');
-            } else if (current < 170) {
-                applyMode('mid');
-            } else {
-                applyMode('peek');
-            }
+            // Snap back to open position
             setTranslate(0);
+            applyMode('peek');
         };
 
-        overlay.addEventListener('pointerup', finishDrag);
-        overlay.addEventListener('pointercancel', finishDrag);
+        sheet.addEventListener('pointerup', finishDrag);
+        sheet.addEventListener('pointercancel', finishDrag);
         applyMode('peek');
     });
 }
