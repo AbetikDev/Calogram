@@ -1,0 +1,20 @@
+{
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/app.py"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/home.html",
+      "dest": "/home.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}
