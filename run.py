@@ -12,6 +12,9 @@ Stop with Ctrl+C — both processes are terminated automatically.
 import os
 import sys
 import signal
+import os
+import sys
+import signal
 import subprocess
 import threading
 import time
@@ -19,7 +22,12 @@ import time
 from server.app import create_app
 
 
-app = create_app()
+# ── On Render / production: expose a single app object for gunicorn ───────────
+# gunicorn imports this module and uses `app` directly; main() is never called.
+_is_production = bool(os.getenv('RENDER') or os.getenv('FLASK_ENV') == 'production')
+app = create_app(
+    frontend_root=os.path.dirname(os.path.abspath(__file__)) if _is_production else None
+)
 
 # ── Colorama (optional, install with: pip install colorama) ───────────────────
 try:
@@ -141,4 +149,10 @@ def main():
 
 
 if __name__ == '__main__':
+    # On Render or production: run gunicorn directly instead of two-server setup
+    if _is_production:
+        port = int(os.getenv('PORT', '10000'))
+        os.execlp('gunicorn', 'gunicorn', 'app:app',
+                  '--bind', f'0.0.0.0:{port}',
+                  '--workers', '2', '--timeout', '60')
     main()
