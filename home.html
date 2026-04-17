@@ -1,14 +1,967 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>Calogram</title>
     <link rel="stylesheet" href="assets/styles/main.css">
     <link rel="icon" href="assets/images/favicon.png" type="image/png">
-    <script type="module" src="assets/scripts/main.js"></script>
+    <style>
+        /* ── Extra dashboard styles ── */
+        body { overflow: hidden; height: 100dvh; }
+
+        /* ── Tab panels ── */
+        .tab-panel {
+            display: none; flex-direction: column;
+            height: calc(100dvh - 52px - 64px);
+            overflow-y: auto; padding-top: 52px;
+        }
+        .tab-panel.active { display: flex; }
+
+        /* ── Food tab ── */
+        .food-section { padding: 16px 16px 0; }
+        .food-search-wrap { position: relative; margin-bottom: 16px; }
+        .food-search {
+            width: 100%; padding: 12px 16px 12px 42px;
+            border: 1.5px solid var(--border_color); border-radius: 12px;
+            background: var(--card_color); color: var(--text_color);
+            font-size: 15px; outline: none;
+        }
+        .food-search:focus { border-color: var(--accent_color); }
+        .food-search-icon {
+            position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+            color: var(--text_muted); font-size: 16px; pointer-events: none;
+        }
+
+        .food-list { display: flex; flex-direction: column; gap: 8px; padding: 0 16px 16px; }
+        .food-card {
+            display: flex; align-items: center; gap: 12px;
+            background: var(--card_color); border-radius: 14px;
+            padding: 14px 16px; cursor: pointer;
+            box-shadow: var(--card_shadow); transition: transform .15s;
+        }
+        .food-card:active { transform: scale(.98); }
+        .food-card-emoji { font-size: 26px; flex-shrink: 0; }
+        .food-card-info { flex: 1; min-width: 0; }
+        .food-card-name { font-size: 14px; font-weight: 600; color: var(--text_color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .food-card-macros { font-size: 12px; color: var(--text_muted); margin-top: 2px; }
+        .food-card-kcal { font-size: 15px; font-weight: 700; color: var(--accent_color); flex-shrink: 0; }
+        .food-card-custom { font-size: 10px; background: var(--accent_color); color: #fff; padding: 2px 6px; border-radius: 6px; }
+
+        /* ── Log items ── */
+        .log-section { padding: 0 16px 8px; }
+        .log-date-title { font-size: 13px; font-weight: 700; color: var(--text_muted); text-transform: uppercase; letter-spacing: .5px; padding: 12px 0 8px; }
+        .log-empty { text-align: center; color: var(--text_muted); font-size: 14px; padding: 24px 0; }
+        .log-item {
+            display: flex; align-items: center; gap: 12px;
+            background: var(--card_color); border-radius: 12px;
+            padding: 12px 14px; margin-bottom: 8px;
+            box-shadow: var(--card_shadow);
+        }
+        .log-item-name { flex: 1; font-size: 14px; font-weight: 600; color: var(--text_color); }
+        .log-item-qty { font-size: 12px; color: var(--text_muted); }
+        .log-item-kcal { font-size: 14px; font-weight: 700; color: var(--accent_color); }
+        .log-item-del { background: none; border: none; color: #e55; font-size: 18px; cursor: pointer; padding: 4px; }
+
+        /* ── Meal sections ── */
+        .meal-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 16px 8px;
+        }
+        .meal-title { font-size: 15px; font-weight: 700; color: var(--text_color); }
+        .meal-kcal { font-size: 13px; color: var(--text_muted); }
+        .meal-add-btn {
+            background: none; border: 1.5px solid var(--accent_color);
+            color: var(--accent_color); border-radius: 8px;
+            font-size: 12px; font-weight: 600; padding: 5px 10px; cursor: pointer;
+        }
+
+        /* ── Modal ── */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,.45);
+            z-index: 200; display: none; align-items: flex-end;
+            backdrop-filter: blur(2px);
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-sheet {
+            width: 100%; background: var(--card_color);
+            border-radius: 24px 24px 0 0; padding: 16px 20px 32px;
+            max-height: 92dvh; overflow-y: auto;
+            animation: slideUp .3s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .modal-handle { width: 40px; height: 4px; background: var(--border_color); border-radius: 99px; margin: 0 auto 16px; }
+        .modal-title { font-size: 18px; font-weight: 800; color: var(--text_color); margin-bottom: 16px; }
+
+        .qty-row { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
+        .qty-btn { width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--border_color); background: var(--bg_color); color: var(--text_color); font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .qty-input { flex: 1; text-align: center; font-size: 20px; font-weight: 700; border: 1.5px solid var(--border_color); border-radius: 12px; padding: 10px; color: var(--text_color); background: var(--bg_color); outline: none; }
+        .qty-input:focus { border-color: var(--accent_color); }
+
+        .meal-selector { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+        .meal-chip {
+            padding: 7px 14px; border-radius: 99px; border: 1.5px solid var(--border_color);
+            font-size: 13px; font-weight: 600; cursor: pointer; background: var(--bg_color);
+            color: var(--text_muted); transition: all .2s;
+        }
+        .meal-chip.active { background: var(--accent_color); border-color: var(--accent_color); color: #fff; }
+
+        .modal-food-preview {
+            background: var(--bg_color); border-radius: 14px; padding: 14px;
+            margin-bottom: 16px;
+        }
+        .modal-food-name { font-size: 16px; font-weight: 700; color: var(--text_color); margin-bottom: 8px; }
+        .macro-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+        .macro-chip { font-size: 12px; padding: 4px 10px; border-radius: 8px; font-weight: 600; }
+        .mc-cal { background: #fff3e0; color: #e65100; }
+        .mc-prot { background: #e3f2fd; color: #1565c0; }
+        .mc-carb { background: #fff8e1; color: #f57f17; }
+        .mc-fat { background: #fce4ec; color: #c62828; }
+
+        /* ── Custom food form ── */
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+        .form-field { display: flex; flex-direction: column; gap: 5px; }
+        .form-field label { font-size: 11px; font-weight: 700; color: var(--text_muted); text-transform: uppercase; letter-spacing: .4px; }
+        .form-field input {
+            padding: 10px 12px; border: 1.5px solid var(--border_color); border-radius: 10px;
+            background: var(--bg_color); color: var(--text_color); font-size: 14px; outline: none;
+        }
+        .form-field input:focus { border-color: var(--accent_color); }
+        .form-field.full { grid-column: 1 / -1; }
+
+        /* ── Profile tab ── */
+        .profile-section { padding: 16px; }
+        .profile-card {
+            background: var(--card_color); border-radius: 18px;
+            padding: 20px; margin-bottom: 16px; box-shadow: var(--card_shadow);
+        }
+        .profile-avatar {
+            width: 72px; height: 72px; border-radius: 50%;
+            background: var(--accent_gradient); display: flex; align-items: center; justify-content: center;
+            font-size: 32px; margin: 0 auto 12px;
+        }
+        .profile-name { font-size: 20px; font-weight: 800; text-align: center; color: var(--text_color); }
+        .profile-email { font-size: 13px; color: var(--text_muted); text-align: center; margin-top: 4px; }
+        .profile-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 16px; }
+        .profile-stat { text-align: center; }
+        .profile-stat-val { font-size: 20px; font-weight: 800; color: var(--text_color); }
+        .profile-stat-lbl { font-size: 11px; color: var(--text_muted); margin-top: 2px; }
+
+        .profile-settings { display: flex; flex-direction: column; gap: 12px; }
+        .settings-item {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--card_color); border-radius: 14px;
+            padding: 16px; box-shadow: var(--card_shadow);
+        }
+        .settings-item-label { font-size: 15px; font-weight: 600; color: var(--text_color); }
+        .settings-item-val { font-size: 14px; color: var(--text_muted); }
+        .settings-item-edit { font-size: 13px; color: var(--accent_color); font-weight: 600; cursor: pointer; }
+
+        .btn-logout {
+            width: 100%; padding: 15px; margin-top: 16px; border: none; border-radius: 14px;
+            background: #fee2e2; color: #dc2626; font-size: 15px; font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* ── Stats week tab ── */
+        .stats-section { padding: 16px; }
+        .week-chart { background: var(--card_color); border-radius: 18px; padding: 20px; box-shadow: var(--card_shadow); margin-bottom: 16px; }
+        .week-chart-title { font-size: 16px; font-weight: 700; color: var(--text_color); margin-bottom: 16px; }
+        .week-bars { display: flex; gap: 6px; align-items: flex-end; height: 100px; }
+        .week-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .week-bar {
+            width: 100%; border-radius: 6px 6px 0 0;
+            background: var(--accent_gradient); min-height: 4px;
+            transition: height .4s ease;
+        }
+        .week-bar.today { background: linear-gradient(135deg, #f9ca24, #f0932b); }
+        .week-bar-label { font-size: 10px; color: var(--text_muted); font-weight: 600; }
+        .week-bar-val { font-size: 9px; color: var(--text_muted); }
+
+        /* ── Loader ── */
+        .loader { display: flex; align-items: center; justify-content: center; height: 80px; }
+        .spinner { width: 28px; height: 28px; border: 3px solid var(--border_color); border-top-color: var(--accent_color); border-radius: 50%; animation: spin .7s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Btn main ── */
+        .btn-main {
+            width: 100%; padding: 16px; border: none; border-radius: 14px;
+            background: var(--accent_gradient); color: #fff;
+            font-size: 16px; font-weight: 700; cursor: pointer;
+        }
+        .btn-main:disabled { opacity: .5; cursor: not-allowed; }
+        .btn-main-outline {
+            width: 100%; padding: 14px; border: 1.5px solid var(--accent_color); border-radius: 14px;
+            background: none; color: var(--accent_color);
+            font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
+
+    <!-- ══════════ HEADER ══════════ -->
+    <header>
+        <a class="days" href="#" id="days_icon">
+            <img class="days_img" src="assets/images/components/interface/medal1.svg" alt="streak">
+            <span class="calc_days" id="active_days">0</span>
+        </a>
+        <h3 class="app_name">CALOGRAM</h3>
+        <a class="date" href="#" id="today_date">
+            <img class="calendar" src="assets/images/components/interface/calendar.svg" alt="date">
+            <span class="date_text" id="today_date_text">00.00</span>
+        </a>
+    </header>
+
+    <!-- ══════════ TAB: СЬОГОДНІ ══════════ -->
+    <div class="tab-panel active" id="tab-home">
+
+        <!-- Hero dark block -->
+        <section class="hero">
+            <!-- Week strip -->
+            <div class="week-days">
+                <div class="day" id="day_1"><span class="day_name">Пн</span><div class="day_circle"><span class="day_date">0</span></div></div>
+                <div class="day" id="day_2"><span class="day_name">Вт</span><div class="day_circle"><span class="day_date">0</span></div></div>
+                <div class="day" id="day_3"><span class="day_name">Ср</span><div class="day_circle"><span class="day_date">0</span></div></div>
+                <div class="day" id="day_4"><span class="day_name">Чт</span><div class="day_circle"><span class="day_date">0</span></div></div>
+                <div class="day" id="day_5"><span class="day_name">Пт</span><div class="day_circle"><span class="day_date">0</span></div></div>
+                <div class="day" id="day_6"><span class="day_name">Сб</span><div class="day_circle"><span class="day_date">0</span></div></div>
+                <div class="day" id="day_7"><span class="day_name">Нд</span><div class="day_circle"><span class="day_date">0</span></div></div>
+            </div>
+
+            <!-- Calorie ring -->
+            <section class="calorie-card">
+                <div class="calorie-sides">
+                    <div class="calorie-side">
+                        <img src="assets/images/components/interface/food1.svg" alt="food" class="side-icon">
+                        <span class="side-value" id="consumed_kcal">0</span>
+                        <span class="side-label">Спожито</span>
+                    </div>
+                    <div class="calorie-ring-wrap">
+                        <svg class="calorie-ring" viewBox="0 0 120 120">
+                            <circle class="ring-bg" cx="60" cy="60" r="50"/>
+                            <circle class="ring-fill" id="ring_fill" cx="60" cy="60" r="50"
+                                stroke-dasharray="314" stroke-dashoffset="314"/>
+                        </svg>
+                        <div class="ring-center">
+                            <span class="ring-percent" id="ring_percent">0%</span>
+                            <span class="ring-goal" id="ring_goal">/ 2000</span>
+                        </div>
+                    </div>
+                    <div class="calorie-side">
+                        <img src="assets/images/components/interface/run.svg" alt="activity" class="side-icon">
+                        <span class="side-value" id="activity_kcal">0</span>
+                        <span class="side-label">Активність</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Quick add -->
+            <section class="quick-actions">
+                <button class="action-btn" id="btn_add" onclick="openAddFoodModal('breakfast')">
+                    <img src="assets/images/components/interface/plass.svg" alt="add">
+                </button>
+                <button class="action-btn" id="btn_scan">
+                    <img src="assets/images/components/interface/qr-code.svg" alt="scan">
+                </button>
+                <button class="action-btn" id="btn_camera">
+                    <img src="assets/images/components/interface/camera.svg" alt="camera">
+                </button>
+                <button class="action-btn" id="btn_activity">
+                    <img src="assets/images/components/interface/fit.svg" alt="activity">
+                </button>
+            </section>
+        </section>
+
+        <!-- Nutrients -->
+        <div class="cards-section">
+            <section class="nutrients-card">
+                <div class="nutrients-header">
+                    <span class="nutrients-title">Поживні речовини</span>
+                </div>
+                <div class="nutrients-grid">
+                    <div class="nutrient">
+                        <span class="nutrient-name">Білки</span>
+                        <div class="nutrient-ring-wrap">
+                            <svg class="nutrient-ring" viewBox="0 0 60 60">
+                                <circle class="n-ring-bg" cx="30" cy="30" r="24"/>
+                                <circle class="n-ring-fill protein" id="n_protein" cx="30" cy="30" r="24" stroke-dasharray="150.8" stroke-dashoffset="150.8"/>
+                            </svg>
+                            <span class="nutrient-percent" id="np_protein">0%</span>
+                        </div>
+                        <span class="nutrient-value"><b id="nv_protein">0</b> г</span>
+                        <span class="nutrient-goal" id="ng_protein">з 0 г</span>
+                    </div>
+                    <div class="nutrient">
+                        <span class="nutrient-name">Вуглеводи</span>
+                        <div class="nutrient-ring-wrap">
+                            <svg class="nutrient-ring" viewBox="0 0 60 60">
+                                <circle class="n-ring-bg" cx="30" cy="30" r="24"/>
+                                <circle class="n-ring-fill carbs" id="n_carbs" cx="30" cy="30" r="24" stroke-dasharray="150.8" stroke-dashoffset="150.8"/>
+                            </svg>
+                            <span class="nutrient-percent" id="np_carbs">0%</span>
+                        </div>
+                        <span class="nutrient-value"><b id="nv_carbs">0</b> г</span>
+                        <span class="nutrient-goal" id="ng_carbs">з 0 г</span>
+                    </div>
+                    <div class="nutrient">
+                        <span class="nutrient-name">Жири</span>
+                        <div class="nutrient-ring-wrap">
+                            <svg class="nutrient-ring" viewBox="0 0 60 60">
+                                <circle class="n-ring-bg" cx="30" cy="30" r="24"/>
+                                <circle class="n-ring-fill fat" id="n_fat" cx="30" cy="30" r="24" stroke-dasharray="150.8" stroke-dashoffset="150.8"/>
+                            </svg>
+                            <span class="nutrient-percent" id="np_fat">0%</span>
+                        </div>
+                        <span class="nutrient-value"><b id="nv_fat">0</b> г</span>
+                        <span class="nutrient-goal" id="ng_fat">з 0 г</span>
+                    </div>
+                    <div class="nutrient">
+                        <span class="nutrient-name">Вода</span>
+                        <div class="nutrient-ring-wrap">
+                            <svg class="nutrient-ring" viewBox="0 0 60 60">
+                                <circle class="n-ring-bg" cx="30" cy="30" r="24"/>
+                                <circle class="n-ring-fill water" id="n_water" cx="30" cy="30" r="24" stroke-dasharray="150.8" stroke-dashoffset="150.8"/>
+                            </svg>
+                            <span class="nutrient-percent" id="np_water">0%</span>
+                        </div>
+                        <span class="nutrient-value"><b id="nv_water">0</b> мл</span>
+                        <span class="nutrient-goal" id="ng_water">з 0 мл</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Today's food log by meal -->
+            <section style="padding: 0 0 80px;">
+                <div id="today-log-meals"></div>
+            </section>
+        </div>
+    </div>
+
+    <!-- ══════════ TAB: СТАТИСТИКА ══════════ -->
+    <div class="tab-panel" id="tab-stats">
+        <div class="stats-section" style="padding-top: 68px;">
+            <div class="week-chart">
+                <div class="week-chart-title">Калорії за тиждень</div>
+                <div class="week-bars" id="week-bars"></div>
+            </div>
+            <div id="stats-today-card" style="background: var(--card_color); border-radius: 18px; padding: 20px; box-shadow: var(--card_shadow);">
+                <div style="font-size:16px;font-weight:700;color:var(--text_color);margin-bottom:12px;">Сьогодні</div>
+                <div id="stats-macro-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════ TAB: ЇЖА ══════════ -->
+    <div class="tab-panel" id="tab-food">
+        <div class="food-section" style="padding-top: 68px;">
+            <div style="display:flex;gap:10px;margin-bottom:12px;">
+                <div class="food-search-wrap" style="flex:1;margin-bottom:0;">
+                    <span class="food-search-icon">🔍</span>
+                    <input class="food-search" id="food-search-input" type="search" placeholder="Пошук продуктів..." oninput="handleFoodSearch(this.value)">
+                </div>
+                <button onclick="openCustomFoodModal()" style="padding:0 14px;border-radius:12px;border:1.5px solid var(--accent_color);background:none;color:var(--accent_color);font-size:22px;cursor:pointer;font-weight:700;">+</button>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px;">
+                <button class="meal-chip active" id="filter-all" onclick="setFoodFilter('all')">Всі</button>
+                <button class="meal-chip" id="filter-shared" onclick="setFoodFilter('shared')">Загальні</button>
+                <button class="meal-chip" id="filter-custom" onclick="setFoodFilter('custom')">Мої продукти</button>
+            </div>
+        </div>
+        <div class="food-list" id="food-list-items">
+            <div class="loader"><div class="spinner"></div></div>
+        </div>
+    </div>
+
+    <!-- ══════════ TAB: ПРОФІЛЬ ══════════ -->
+    <div class="tab-panel" id="tab-profile">
+        <div class="profile-section" style="padding-top: 68px; padding-bottom: 80px;">
+            <div class="profile-card">
+                <div class="profile-avatar" id="profile-avatar">👤</div>
+                <div class="profile-name" id="profile-name">—</div>
+                <div class="profile-email" id="profile-email">—</div>
+                <div class="profile-stats">
+                    <div class="profile-stat">
+                        <div class="profile-stat-val" id="ps-age">—</div>
+                        <div class="profile-stat-lbl">Вік</div>
+                    </div>
+                    <div class="profile-stat">
+                        <div class="profile-stat-val" id="ps-weight">—</div>
+                        <div class="profile-stat-lbl">Вага</div>
+                    </div>
+                    <div class="profile-stat">
+                        <div class="profile-stat-val" id="ps-goal">—</div>
+                        <div class="profile-stat-lbl">Мета</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="profile-settings">
+                <div class="settings-item">
+                    <div>
+                        <div class="settings-item-label">Ціль калорій</div>
+                        <div class="settings-item-val" id="sp-calgoal">— ккал/день</div>
+                    </div>
+                    <span class="settings-item-edit" onclick="openGoalEditor()">Змінити</span>
+                </div>
+                <div class="settings-item">
+                    <div>
+                        <div class="settings-item-label">Білки / Вуглеводи / Жири</div>
+                        <div class="settings-item-val" id="sp-macros">—</div>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <div>
+                        <div class="settings-item-label">Стать</div>
+                        <div class="settings-item-val" id="sp-gender">—</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-logout" onclick="logout()">Вийти з акаунту</button>
+        </div>
+    </div>
+
+    <!-- ══════════ FOOTER NAV ══════════ -->
+    <footer>
+        <nav>
+            <a class="nav-link active" href="#home" onclick="switchTab('home',this)">
+                <img class="nav_img" src="assets/images/components/interface/home.svg" alt="home">
+                <span>Головна</span>
+            </a>
+            <a class="nav-link" href="#stats" onclick="switchTab('stats',this)">
+                <img class="nav_img" src="assets/images/components/interface/stats.svg" alt="stats">
+                <span>Статистика</span>
+            </a>
+            <a class="nav-link nav-link--add" href="#new" onclick="openAddFoodModal('breakfast');return false;">
+                <div class="add-circle">
+                    <img class="nav_img" src="assets/images/components/interface/plass.svg" alt="new">
+                </div>
+            </a>
+            <a class="nav-link" href="#food" onclick="switchTab('food',this)">
+                <img class="nav_img" src="assets/images/components/interface/food.svg" alt="food">
+                <span>Їжа</span>
+            </a>
+            <a class="nav-link" href="#profile" onclick="switchTab('profile',this)">
+                <img class="nav_img" src="assets/images/components/interface/user.svg" alt="profile">
+                <span>Профіль</span>
+            </a>
+        </nav>
+    </footer>
+
+    <!-- ══════════ MODAL: ADD FOOD TO LOG ══════════ -->
+    <div class="modal-overlay" id="modal-add-food" onclick="closeModalIfOverlay(event,'modal-add-food')">
+        <div class="modal-sheet">
+            <div class="modal-handle"></div>
+            <div class="modal-title">Додати до щоденника</div>
+
+            <!-- Search inside modal -->
+            <div class="food-search-wrap">
+                <span class="food-search-icon">🔍</span>
+                <input class="food-search" id="modal-food-search" type="search" placeholder="Знайти продукт..." oninput="handleModalSearch(this.value)">
+            </div>
+            <div id="modal-food-results" style="max-height:200px;overflow-y:auto;margin-bottom:12px;"></div>
+
+            <!-- Selected food info -->
+            <div id="modal-selected-food" style="display:none;">
+                <div class="modal-food-preview">
+                    <div class="modal-food-name" id="modal-food-name">—</div>
+                    <div class="macro-chips" id="modal-food-macros"></div>
+                </div>
+                <div style="font-size:13px;font-weight:600;color:var(--text_muted);margin-bottom:8px;">Кількість</div>
+                <div class="qty-row">
+                    <button class="qty-btn" onclick="changeQty(-10)">−</button>
+                    <input class="qty-input" id="modal-qty" type="number" value="100" min="1" max="9999" oninput="updateMacroPreview()">
+                    <span style="font-size:14px;color:var(--text_muted);font-weight:600;" id="modal-qty-unit">г</span>
+                    <button class="qty-btn" onclick="changeQty(10)">+</button>
+                </div>
+                <div style="font-size:13px;font-weight:600;color:var(--text_muted);margin-bottom:8px;">Прийом їжі</div>
+                <div class="meal-selector">
+                    <button class="meal-chip active" data-meal="breakfast" onclick="selectMeal(this)">Сніданок</button>
+                    <button class="meal-chip" data-meal="lunch" onclick="selectMeal(this)">Обід</button>
+                    <button class="meal-chip" data-meal="dinner" onclick="selectMeal(this)">Вечеря</button>
+                    <button class="meal-chip" data-meal="snack" onclick="selectMeal(this)">Перекус</button>
+                </div>
+                <button class="btn-main" id="modal-add-btn" onclick="confirmAddFood()">Додати</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════ MODAL: CUSTOM FOOD ══════════ -->
+    <div class="modal-overlay" id="modal-custom-food" onclick="closeModalIfOverlay(event,'modal-custom-food')">
+        <div class="modal-sheet">
+            <div class="modal-handle"></div>
+            <div class="modal-title">Новий продукт</div>
+            <div class="form-field full" style="margin-bottom:12px;">
+                <label>Назва продукту</label>
+                <input id="cf-name" type="text" placeholder="Наприклад: Протеїновий батончик">
+            </div>
+            <div class="form-row">
+                <div class="form-field">
+                    <label>Калорії (на 100г)</label>
+                    <input id="cf-cal" type="number" placeholder="0" min="0">
+                </div>
+                <div class="form-field">
+                    <label>Одиниця</label>
+                    <input id="cf-unit" type="text" placeholder="г" value="г">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-field">
+                    <label>Білки (г)</label>
+                    <input id="cf-protein" type="number" placeholder="0" min="0">
+                </div>
+                <div class="form-field">
+                    <label>Вуглеводи (г)</label>
+                    <input id="cf-carbs" type="number" placeholder="0" min="0">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-field">
+                    <label>Жири (г)</label>
+                    <input id="cf-fat" type="number" placeholder="0" min="0">
+                </div>
+                <div class="form-field">
+                    <label>Вага порції (г)</label>
+                    <input id="cf-unit-weight" type="number" placeholder="100" min="1" value="100">
+                </div>
+            </div>
+            <div id="cf-error" style="color:#e55;font-size:13px;min-height:18px;margin-bottom:8px;"></div>
+            <button class="btn-main" onclick="submitCustomFood()">Зберегти продукт</button>
+        </div>
+    </div>
+
+    <!-- ══════════ MODAL: EDIT GOAL ══════════ -->
+    <div class="modal-overlay" id="modal-goal" onclick="closeModalIfOverlay(event,'modal-goal')">
+        <div class="modal-sheet">
+            <div class="modal-handle"></div>
+            <div class="modal-title">Ціль калорій</div>
+            <div class="form-field" style="margin-bottom:16px;">
+                <label>Денна ціль (ккал)</label>
+                <input id="goal-cal-input" type="number" min="800" max="10000" placeholder="2000">
+            </div>
+            <button class="btn-main" onclick="saveGoal()">Зберегти</button>
+        </div>
+    </div>
+
+<script>
+const API = `http://${window.location.hostname}:5001/api`;
+let token = localStorage.getItem('cg_token');
+let userData = null;
+let allFoods = [];
+let todayLog = [];
+let selectedFood = null;
+let foodFilter = 'all';
+const TODAY = new Date().toISOString().slice(0, 10);
+
+// ── Guard ──────────────────────────────────────────────────────
+if (!token) { window.location.href = 'index.html'; }
+
+// ── API helper ────────────────────────────────────────────────
+async function api(method, path, body) {
+    const opts = {
+        method,
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(API + path, opts);
+    if (res.status === 401) { localStorage.removeItem('cg_token'); window.location.href = 'index.html'; }
+    return res.json();
+}
+
+// ── Tab switching ─────────────────────────────────────────────
+function switchTab(name, el) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
+    if (el) el.classList.add('active');
+    if (name === 'stats') loadWeekStats();
+    if (name === 'food') loadFoods();
+    if (name === 'profile') renderProfile();
+}
+
+// ── Date helpers ──────────────────────────────────────────────
+function formatDate(iso) {
+    const d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit' });
+}
+function getWeekDays() {
+    const today = new Date();
+    const dow = (today.getDay() + 6) % 7; // Mon=0
+    return Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(today); d.setDate(today.getDate() - dow + i); return d;
+    });
+}
+
+// ── Load today data ───────────────────────────────────────────
+async function loadToday() {
+    const [stats, log] = await Promise.all([
+        api('GET', '/food/stats?date=' + TODAY),
+        api('GET', '/food/log?date=' + TODAY)
+    ]);
+    todayLog = log;
+
+    // Ring
+    const pct = Math.min(100, Math.round(stats.calories / (stats.calorie_goal || 2000) * 100));
+    document.getElementById('consumed_kcal').textContent = Math.round(stats.calories);
+    document.getElementById('ring_percent').textContent = pct + '%';
+    document.getElementById('ring_goal').textContent = '/ ' + (stats.calorie_goal || 2000);
+    const offset = 314 - (314 * pct / 100);
+    document.getElementById('ring_fill').style.strokeDashoffset = offset;
+
+    // Nutrients
+    setNutrient('protein', stats.protein, stats.protein_goal || 120);
+    setNutrient('carbs', stats.carbs, stats.carbs_goal || 250);
+    setNutrient('fat', stats.fat, stats.fat_goal || 65);
+
+    // Render log by meal
+    renderMealLog(log);
+}
+
+function setNutrient(id, val, goal) {
+    const pct = Math.min(100, Math.round(val / (goal || 1) * 100));
+    document.getElementById('nv_' + id).textContent = Math.round(val);
+    document.getElementById('ng_' + id).textContent = 'з ' + goal + ' г';
+    document.getElementById('np_' + id).textContent = pct + '%';
+    const offset = 150.8 - (150.8 * pct / 100);
+    document.getElementById('n_' + id).style.strokeDashoffset = offset;
+}
+
+const MEALS = { breakfast: 'Сніданок', lunch: 'Обід', dinner: 'Вечеря', snack: 'Перекус' };
+function renderMealLog(log) {
+    const container = document.getElementById('today-log-meals');
+    const byMeal = {};
+    for (const m of Object.keys(MEALS)) byMeal[m] = [];
+    log.forEach(item => { if (byMeal[item.meal_type]) byMeal[item.meal_type].push(item); });
+
+    container.innerHTML = '';
+    for (const [mealKey, items] of Object.entries(byMeal)) {
+        const total = items.reduce((s, i) => s + i.total_calories, 0);
+        const html = `
+        <div class="meal-header">
+            <span class="meal-title">${MEALS[mealKey]}</span>
+            <span class="meal-kcal">${Math.round(total)} ккал</span>
+            <button class="meal-add-btn" onclick="openAddFoodModal('${mealKey}')">+ Додати</button>
+        </div>
+        <div class="log-section">
+            ${items.length === 0
+                ? `<div class="log-empty">Ще нічого не додано</div>`
+                : items.map(i => `
+                <div class="log-item">
+                    <div style="flex:1;">
+                        <div class="log-item-name">${i.name}</div>
+                        <div class="log-item-qty">${i.quantity} ${i.unit} · Б:${i.total_protein}г В:${i.total_carbs}г Ж:${i.total_fat}г</div>
+                    </div>
+                    <div class="log-item-kcal">${i.total_calories} ккал</div>
+                    <button class="log-item-del" onclick="deleteLogItem(${i.id})" title="Видалити">×</button>
+                </div>`).join('')}
+        </div>`;
+        container.insertAdjacentHTML('beforeend', html);
+    }
+}
+
+async function deleteLogItem(id) {
+    await api('DELETE', '/food/log/' + id);
+    await loadToday();
+}
+
+// ── Week header ───────────────────────────────────────────────
+function renderWeekHeader() {
+    const days = getWeekDays();
+    const names = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'];
+    const todayIso = TODAY;
+    days.forEach((d, i) => {
+        const el = document.getElementById('day_' + (i + 1));
+        if (!el) return;
+        el.querySelector('.day_name').textContent = names[i];
+        el.querySelector('.day_date').textContent = d.getDate();
+        const iso = d.toISOString().slice(0, 10);
+        if (iso === todayIso) el.classList.add('today');
+    });
+    const now = new Date();
+    document.getElementById('today_date_text').textContent =
+        now.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit' });
+}
+
+// ── Stats ─────────────────────────────────────────────────────
+async function loadWeekStats() {
+    const data = await api('GET', '/food/stats/week');
+    const maxCal = Math.max(...data.map(d => d.calories), 1);
+    const container = document.getElementById('week-bars');
+    const names = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'];
+    container.innerHTML = data.map((d, i) => {
+        const h = Math.round((d.calories / maxCal) * 90);
+        const isToday = d.date === TODAY;
+        return `<div class="week-bar-wrap">
+            <div class="week-bar-val">${Math.round(d.calories)}</div>
+            <div class="week-bar ${isToday ? 'today' : ''}" style="height:${h}px"></div>
+            <div class="week-bar-label">${names[i]}</div>
+        </div>`;
+    }).join('');
+
+    // Today macros
+    const stats = await api('GET', '/food/stats?date=' + TODAY);
+    const macroList = document.getElementById('stats-macro-list');
+    macroList.innerHTML = [
+        { label: 'Калорії', val: Math.round(stats.calories), goal: stats.calorie_goal, unit: 'ккал', color: '#e65100' },
+        { label: 'Білки', val: Math.round(stats.protein), goal: stats.protein_goal, unit: 'г', color: '#1565c0' },
+        { label: 'Вуглеводи', val: Math.round(stats.carbs), goal: stats.carbs_goal, unit: 'г', color: '#f57f17' },
+        { label: 'Жири', val: Math.round(stats.fat), goal: stats.fat_goal, unit: 'г', color: '#c62828' },
+    ].map(m => {
+        const pct = Math.min(100, Math.round(m.val / (m.goal || 1) * 100));
+        return `<div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                <span style="font-size:14px;font-weight:600;color:var(--text_color)">${m.label}</span>
+                <span style="font-size:13px;color:var(--text_muted)">${m.val} / ${m.goal} ${m.unit}</span>
+            </div>
+            <div style="height:8px;background:var(--border_color);border-radius:99px;overflow:hidden;">
+                <div style="height:100%;width:${pct}%;background:${m.color};border-radius:99px;transition:width .4s;"></div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// ── Foods ─────────────────────────────────────────────────────
+const FOOD_EMOJI = ['🥩','🥚','🍚','🥣','🍗','🥛','🍌','🍎','🥖','🧀','🐟','🥔','🥒','🍅','🥗','🌰','🍯','🧈','🫙','🍝','🐠','🥑','🍊','🥜','🫙'];
+
+function foodEmoji(name) {
+    const n = name.toLowerCase();
+    if (n.includes('курин') || n.includes('грудк')) return '🍗';
+    if (n.includes('яйц')) return '🥚';
+    if (n.includes('гречк') || n.includes('каш')) return '🍚';
+    if (n.includes('рис')) return '🍚';
+    if (n.includes('молок') || n.includes('кефір')) return '🥛';
+    if (n.includes('банан')) return '🍌';
+    if (n.includes('яблук')) return '🍎';
+    if (n.includes('хліб')) return '🥖';
+    if (n.includes('сир')) return '🧀';
+    if (n.includes('лосос') || n.includes('тунец') || n.includes('рибн')) return '🐟';
+    if (n.includes('картопл')) return '🥔';
+    if (n.includes('огірк')) return '🥒';
+    if (n.includes('помідор')) return '🍅';
+    if (n.includes('горіх')) return '🌰';
+    if (n.includes('мед')) return '🍯';
+    if (n.includes('масл')) return '🧈';
+    if (n.includes('макарон') || n.includes('паст')) return '🍝';
+    if (n.includes('авокадо')) return '🥑';
+    if (n.includes('апельсин')) return '🍊';
+    if (n.includes('йогурт')) return '🫙';
+    if (n.includes('полун')) return '🍓';
+    if (n.includes('брокол')) return '🥦';
+    return '🍽️';
+}
+
+async function loadFoods() {
+    const list = await api('GET', '/food/list');
+    allFoods = list;
+    renderFoodList(list);
+}
+
+function setFoodFilter(f) {
+    foodFilter = f;
+    ['all', 'shared', 'custom'].forEach(id => {
+        document.getElementById('filter-' + id).classList.toggle('active', id === f);
+    });
+    const q = document.getElementById('food-search-input').value;
+    filterAndRender(q);
+}
+
+function filterAndRender(q) {
+    let filtered = allFoods;
+    if (foodFilter === 'shared') filtered = filtered.filter(f => !f.is_custom);
+    if (foodFilter === 'custom') filtered = filtered.filter(f => f.is_custom);
+    if (q) filtered = filtered.filter(f => f.name.toLowerCase().includes(q.toLowerCase()));
+    renderFoodList(filtered);
+}
+
+function handleFoodSearch(q) { filterAndRender(q); }
+
+function renderFoodList(foods) {
+    const container = document.getElementById('food-list-items');
+    if (!foods.length) {
+        container.innerHTML = '<div class="log-empty">Нічого не знайдено</div>';
+        return;
+    }
+    container.innerHTML = foods.map(f => `
+        <div class="food-card" onclick="openAddFoodModal('breakfast', ${f.id})">
+            <span class="food-card-emoji">${foodEmoji(f.name)}</span>
+            <div class="food-card-info">
+                <div class="food-card-name">${f.name}${f.is_custom ? ' <span class="food-card-custom">Моє</span>' : ''}</div>
+                <div class="food-card-macros">Б:${f.protein}г · В:${f.carbs}г · Ж:${f.fat}г · на ${f.unit_weight}${f.unit}</div>
+            </div>
+            <span class="food-card-kcal">${f.calories}<br><span style="font-size:11px;font-weight:400;color:var(--text_muted)">ккал</span></span>
+        </div>
+    `).join('');
+}
+
+// ── Add food modal ─────────────────────────────────────────────
+let currentMeal = 'breakfast';
+function openAddFoodModal(meal, foodId) {
+    currentMeal = meal || 'breakfast';
+    document.querySelectorAll('.meal-chip[data-meal]').forEach(c => {
+        c.classList.toggle('active', c.dataset.meal === currentMeal);
+    });
+    document.getElementById('modal-food-results').innerHTML = '';
+    document.getElementById('modal-food-search').value = '';
+    document.getElementById('modal-selected-food').style.display = 'none';
+    document.getElementById('modal-add-food').classList.add('open');
+    selectedFood = null;
+    if (foodId) {
+        const food = allFoods.find(f => f.id === foodId);
+        if (food) selectFoodForLog(food);
+    }
+    document.getElementById('modal-food-search').focus();
+}
+
+function handleModalSearch(q) {
+    if (!q.trim()) { document.getElementById('modal-food-results').innerHTML = ''; return; }
+    const results = allFoods.filter(f => f.name.toLowerCase().includes(q.toLowerCase())).slice(0, 10);
+    document.getElementById('modal-food-results').innerHTML = results.map(f => `
+        <div class="food-card" style="margin-bottom:6px;" onclick="selectFoodForLog(${JSON.stringify(f).replace(/"/g,'&quot;')})">
+            <span class="food-card-emoji">${foodEmoji(f.name)}</span>
+            <div class="food-card-info">
+                <div class="food-card-name">${f.name}</div>
+                <div class="food-card-macros">${f.calories} ккал · ${f.unit_weight}${f.unit}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function selectFoodForLog(food) {
+    selectedFood = food;
+    document.getElementById('modal-food-results').innerHTML = '';
+    document.getElementById('modal-food-search').value = food.name;
+    document.getElementById('modal-selected-food').style.display = 'block';
+    document.getElementById('modal-food-name').textContent = food.name;
+    document.getElementById('modal-qty').value = food.unit_weight;
+    document.getElementById('modal-qty-unit').textContent = food.unit;
+    updateMacroPreview();
+}
+
+function updateMacroPreview() {
+    if (!selectedFood) return;
+    const qty = parseFloat(document.getElementById('modal-qty').value) || 100;
+    const f = qty / (selectedFood.unit_weight || 100);
+    document.getElementById('modal-food-macros').innerHTML = `
+        <span class="macro-chip mc-cal">${Math.round(selectedFood.calories * f)} ккал</span>
+        <span class="macro-chip mc-prot">Б: ${Math.round(selectedFood.protein * f)}г</span>
+        <span class="macro-chip mc-carb">В: ${Math.round(selectedFood.carbs * f)}г</span>
+        <span class="macro-chip mc-fat">Ж: ${Math.round(selectedFood.fat * f)}г</span>
+    `;
+}
+
+function changeQty(delta) {
+    const inp = document.getElementById('modal-qty');
+    inp.value = Math.max(1, (parseFloat(inp.value) || 0) + delta);
+    updateMacroPreview();
+}
+
+function selectMeal(el) {
+    document.querySelectorAll('.meal-chip[data-meal]').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    currentMeal = el.dataset.meal;
+}
+
+async function confirmAddFood() {
+    if (!selectedFood) return;
+    const qty = parseFloat(document.getElementById('modal-qty').value) || 100;
+    const btn = document.getElementById('modal-add-btn');
+    btn.disabled = true; btn.textContent = 'Додається...';
+    await api('POST', '/food/log', {
+        food_id: selectedFood.id,
+        quantity: qty,
+        meal_type: currentMeal,
+        date: TODAY
+    });
+    btn.disabled = false; btn.textContent = 'Додати';
+    closeModal('modal-add-food');
+    await loadToday();
+}
+
+// ── Custom food modal ──────────────────────────────────────────
+function openCustomFoodModal() {
+    ['cf-name','cf-cal','cf-protein','cf-carbs','cf-fat'].forEach(id => { document.getElementById(id).value = ''; });
+    document.getElementById('cf-unit').value = 'г';
+    document.getElementById('cf-unit-weight').value = '100';
+    document.getElementById('cf-error').textContent = '';
+    document.getElementById('modal-custom-food').classList.add('open');
+}
+
+async function submitCustomFood() {
+    const name = document.getElementById('cf-name').value.trim();
+    const cal = parseFloat(document.getElementById('cf-cal').value);
+    const err = document.getElementById('cf-error');
+    if (!name) { err.textContent = 'Введіть назву'; return; }
+    if (isNaN(cal)) { err.textContent = 'Введіть калорії'; return; }
+    err.textContent = '';
+    const result = await api('POST', '/food/add', {
+        name,
+        calories: cal,
+        protein: parseFloat(document.getElementById('cf-protein').value) || 0,
+        carbs: parseFloat(document.getElementById('cf-carbs').value) || 0,
+        fat: parseFloat(document.getElementById('cf-fat').value) || 0,
+        unit: document.getElementById('cf-unit').value || 'г',
+        unit_weight: parseFloat(document.getElementById('cf-unit-weight').value) || 100,
+    });
+    if (result.error) { err.textContent = result.error; return; }
+    allFoods.push(result);
+    closeModal('modal-custom-food');
+    renderFoodList(allFoods);
+}
+
+// ── Goal editor ────────────────────────────────────────────────
+function openGoalEditor() {
+    document.getElementById('goal-cal-input').value = userData?.calorie_goal || 2000;
+    document.getElementById('modal-goal').classList.add('open');
+}
+
+async function saveGoal() {
+    const cal = parseInt(document.getElementById('goal-cal-input').value);
+    if (!cal || cal < 800) return;
+    const res = await api('PUT', '/user/profile', { calorie_goal: cal });
+    userData = res;
+    renderProfile();
+    closeModal('modal-goal');
+    await loadToday();
+}
+
+// ── Profile ────────────────────────────────────────────────────
+const GOAL_LABELS = { lose: 'Схуднення', maintain: 'Підтримка', gain: 'Набір маси', null: '—', undefined: '—' };
+const GENDER_LABELS = { female: 'Жіноча', male: 'Чоловіча', other: 'Інша', null: '—', undefined: '—' };
+
+function renderProfile() {
+    if (!userData) return;
+    document.getElementById('profile-name').textContent = userData.name || userData.email.split('@')[0];
+    document.getElementById('profile-email').textContent = userData.email;
+    document.getElementById('ps-age').textContent = userData.age ? userData.age + ' р' : '—';
+    document.getElementById('ps-weight').textContent = userData.weight ? userData.weight + ' кг' : '—';
+    document.getElementById('ps-goal').textContent = GOAL_LABELS[userData.goal] || '—';
+    document.getElementById('sp-calgoal').textContent = (userData.calorie_goal || 2000) + ' ккал/день';
+    document.getElementById('sp-macros').textContent = `Б:${userData.protein_goal||120}г · В:${userData.carbs_goal||250}г · Ж:${userData.fat_goal||65}г`;
+    document.getElementById('sp-gender').textContent = GENDER_LABELS[userData.gender] || '—';
+    const avatarMap = { female: '👩', male: '👨', other: '🧑' };
+    document.getElementById('profile-avatar').textContent = avatarMap[userData.gender] || '👤';
+}
+
+// ── Modal helpers ──────────────────────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModalIfOverlay(e, id) { if (e.target.id === id) closeModal(id); }
+
+function logout() {
+    localStorage.removeItem('cg_token');
+    window.location.href = 'index.html';
+}
+
+// ── Boot ───────────────────────────────────────────────────────
+(async () => {
+    userData = await api('GET', '/user/me');
+    renderWeekHeader();
+    await loadToday();
+    await loadFoods();
+})();
+</script>
+</body>
+</html>
+
 
     <header>
         <a class="days" href="#" id="days_icon">

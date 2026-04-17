@@ -1,14 +1,715 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Calogram</title>
-    <link rel="stylesheet" href="assets/styles/main.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Calogram — Вхід</title>
     <link rel="icon" href="assets/images/favicon.png" type="image/png">
+    <style>
+        :root {
+            --accent: #3ecf8e;
+            --accent-dark: #1aab6d;
+            --orange: #E07050;
+            --bg: #f5f7f5;
+            --card: #ffffff;
+            --text: #1a2535;
+            --muted: #8a95a3;
+            --border: #e4e9ef;
+            --picker-hl: #3ecf8e;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            height: 100%;
+            background: var(--bg);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            overflow: hidden;
+        }
+
+        /* ── Screens ─────────────────────────────── */
+        .screen {
+            position: fixed; inset: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 24px 20px;
+            opacity: 0; pointer-events: none;
+            transition: opacity .35s ease, transform .35s ease;
+            transform: translateX(60px);
+            overflow-y: auto;
+        }
+        .screen.active {
+            opacity: 1; pointer-events: all; transform: translateX(0);
+        }
+        .screen.exit-left { transform: translateX(-60px); opacity: 0; pointer-events: none; }
+
+        /* ── Top bar (onboarding) ─────────────────── */
+        .ob-topbar {
+            position: fixed; top: 0; left: 0; right: 0;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 20px; z-index: 10;
+        }
+        .ob-back {
+            width: 36px; height: 36px;
+            border: none; background: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; transition: background .2s;
+            color: var(--muted); font-size: 20px;
+        }
+        .ob-back:hover { background: var(--border); }
+        .ob-step {
+            font-size: 13px; font-weight: 600;
+            color: var(--muted); letter-spacing: .5px;
+        }
+
+        /* ── Progress bar ─────────────────────────── */
+        .ob-progress {
+            position: fixed; top: 56px; left: 20px; right: 20px;
+            height: 4px; background: var(--border); border-radius: 99px; z-index: 10;
+        }
+        .ob-progress-fill {
+            height: 100%; background: var(--accent); border-radius: 99px;
+            transition: width .4s ease;
+        }
+
+        /* ── Auth card ───────────────────────────── */
+        #screen-auth { background: var(--card); }
+        .auth-logo {
+            font-size: 28px; font-weight: 900;
+            letter-spacing: 3px; color: var(--text);
+            margin-bottom: 8px;
+        }
+        .auth-logo span { color: var(--accent); }
+        .auth-tagline {
+            font-size: 14px; color: var(--muted); margin-bottom: 32px;
+            text-align: center;
+        }
+
+        /* ── Tabs ────────────────────────────────── */
+        .auth-tabs {
+            display: flex; gap: 0;
+            border: 1.5px solid var(--border); border-radius: 12px;
+            overflow: hidden; margin-bottom: 28px; width: 100%; max-width: 340px;
+        }
+        .auth-tab {
+            flex: 1; padding: 11px; border: none; background: transparent;
+            font-size: 14px; font-weight: 600; cursor: pointer;
+            color: var(--muted); transition: all .2s;
+        }
+        .auth-tab.active { background: var(--accent); color: #fff; }
+
+        /* ── Form ────────────────────────────────── */
+        .auth-form { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 14px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+        .form-input {
+            width: 100%; padding: 14px 16px; border: 1.5px solid var(--border);
+            border-radius: 12px; font-size: 15px; color: var(--text);
+            background: var(--bg); outline: none; transition: border-color .2s;
+        }
+        .form-input:focus { border-color: var(--accent); background: #fff; }
+        .form-input.error { border-color: #e55; }
+        .form-error { font-size: 13px; color: #e55; min-height: 18px; }
+
+        /* ── Main button ─────────────────────────── */
+        .btn-main {
+            width: 100%; padding: 16px; border: none; border-radius: 14px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            color: #fff; font-size: 16px; font-weight: 700;
+            cursor: pointer; transition: opacity .2s, transform .15s;
+            margin-top: 4px;
+        }
+        .btn-main:hover { opacity: .92; }
+        .btn-main:active { transform: scale(.98); }
+        .btn-main:disabled { opacity: .5; cursor: not-allowed; }
+
+        /* ── Onboarding screens ───────────────────── */
+        .screen-ob { background: #fff; padding-top: 90px; }
+        .ob-title {
+            font-size: 26px; font-weight: 800; color: var(--text);
+            text-align: center; line-height: 1.3; margin-bottom: 40px;
+        }
+
+        /* ── Drum picker (age) ───────────────────── */
+        .drum-picker-wrap {
+            position: relative; width: 220px; height: 220px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 40px;
+        }
+        .drum-picker-hl {
+            position: absolute; left: 0; right: 0;
+            top: 50%; transform: translateY(-50%);
+            height: 64px; background: var(--accent);
+            border-radius: 16px; z-index: 0; opacity: .15;
+        }
+        .drum-picker {
+            width: 100%; height: 100%;
+            overflow: hidden; scroll-snap-type: y mandatory;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            scrollbar-width: none; position: relative; z-index: 1;
+        }
+        .drum-picker::-webkit-scrollbar { display: none; }
+        .drum-item {
+            height: 64px; display: flex; align-items: center; justify-content: center;
+            font-size: 38px; font-weight: 700; color: #ccc;
+            scroll-snap-align: center; cursor: pointer;
+            transition: color .15s, font-size .15s;
+            user-select: none;
+        }
+        .drum-item.center { color: var(--text); font-size: 52px; }
+        .drum-item.near { color: #888; font-size: 42px; }
+        .drum-picker-fade-top, .drum-picker-fade-bottom {
+            position: absolute; left: 0; right: 0; height: 72px; z-index: 2; pointer-events: none;
+        }
+        .drum-picker-fade-top { top: 0; background: linear-gradient(to bottom, #fff 40%, transparent); }
+        .drum-picker-fade-bottom { bottom: 0; background: linear-gradient(to top, #fff 40%, transparent); }
+
+        /* ── Ruler (weight) ──────────────────────── */
+        .weight-display {
+            font-size: 52px; font-weight: 800; color: var(--text);
+            text-align: center; margin-bottom: 10px;
+        }
+        .weight-unit-row {
+            display: flex; gap: 10px; justify-content: center; margin-bottom: 36px;
+        }
+        .unit-btn {
+            padding: 8px 28px; border-radius: 10px; border: 1.5px solid var(--border);
+            font-size: 14px; font-weight: 600; cursor: pointer; background: #fff;
+            color: var(--muted); transition: all .2s;
+        }
+        .unit-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+        .ruler-wrap {
+            width: 100%; overflow: hidden; position: relative; height: 80px;
+            margin-bottom: 40px;
+        }
+        .ruler {
+            display: flex; align-items: flex-end; padding-bottom: 8px;
+            overflow-x: scroll; scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch; scrollbar-width: none;
+            padding-left: calc(50% - 1px); padding-right: calc(50% - 1px);
+            gap: 0; width: 100%;
+        }
+        .ruler::-webkit-scrollbar { display: none; }
+        .ruler-tick {
+            flex-shrink: 0; width: 10px; scroll-snap-align: start;
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+        }
+        .ruler-tick .tick {
+            width: 1.5px; background: var(--border); border-radius: 2px;
+        }
+        .ruler-tick.major .tick { height: 40px; background: var(--muted); }
+        .ruler-tick.minor .tick { height: 24px; }
+        .ruler-tick.micro .tick { height: 16px; }
+        .ruler-tick.center-tick .tick { background: var(--accent) !important; height: 48px !important; width: 2px; }
+        .ruler-tick .tick-label {
+            font-size: 11px; font-weight: 600; color: var(--muted);
+        }
+        .ruler-center-line {
+            position: absolute; top: 0; left: 50%; width: 2px; height: 56px;
+            background: var(--accent); transform: translateX(-50%); z-index: 2; pointer-events: none;
+            border-radius: 2px;
+        }
+
+        /* ── Goal & Gender options ──────────────── */
+        .options-list { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
+        .option-item {
+            display: flex; align-items: center; gap: 14px;
+            padding: 16px 18px; border: 2px solid var(--border);
+            border-radius: 16px; cursor: pointer; background: #fff;
+            transition: border-color .2s, background .2s;
+        }
+        .option-item:hover { border-color: var(--accent); }
+        .option-item.selected { border-color: var(--orange); }
+        .option-icon { width: 40px; height: 40px; object-fit: contain; flex-shrink: 0; }
+        .option-label { flex: 1; font-size: 16px; font-weight: 600; color: var(--text); }
+        .option-radio {
+            width: 22px; height: 22px; border-radius: 50%;
+            border: 2px solid var(--border); transition: all .2s;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .option-item.selected .option-radio {
+            border-color: var(--orange); background: var(--orange);
+        }
+        .option-item.selected .option-radio::after {
+            content: ''; width: 8px; height: 8px; border-radius: 50%; background: #fff;
+        }
+
+        /* ── Bottom action area ──────────────────── */
+        .ob-bottom {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            padding: 16px 20px 32px; background: #fff;
+            border-top: 1px solid var(--border);
+        }
+        .btn-skip {
+            display: block; text-align: center; margin-top: 12px;
+            font-size: 14px; color: var(--muted); cursor: pointer;
+            background: none; border: none; width: 100%; padding: 8px;
+        }
+        .btn-skip:hover { color: var(--text); }
+
+        /* ── Gender icons text ───────────────────── */
+        .gender-icon { font-size: 24px; }
+    </style>
 </head>
 <body>
-    
+
+<!-- ══════════════════ AUTH SCREEN ══════════════════ -->
+<div id="screen-auth" class="screen active">
+    <div class="auth-logo">CALO<span>GRAM</span></div>
+    <p class="auth-tagline">Твій особистий трекер харчування</p>
+
+    <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Вхід</button>
+        <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Реєстрація</button>
+    </div>
+
+    <!-- Login form -->
+    <form class="auth-form" id="form-login" onsubmit="handleLogin(event)">
+        <div class="form-group">
+            <label>Email</label>
+            <input class="form-input" type="email" id="login-email" placeholder="you@example.com" autocomplete="email" required>
+        </div>
+        <div class="form-group">
+            <label>Пароль</label>
+            <input class="form-input" type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" required>
+        </div>
+        <div class="form-error" id="login-error"></div>
+        <button class="btn-main" type="submit" id="login-btn">Увійти</button>
+    </form>
+
+    <!-- Register form -->
+    <form class="auth-form" id="form-register" style="display:none" onsubmit="handleRegister(event)">
+        <div class="form-group">
+            <label>Ім'я</label>
+            <input class="form-input" type="text" id="reg-name" placeholder="Як тебе звати?" autocomplete="name">
+        </div>
+        <div class="form-group">
+            <label>Email</label>
+            <input class="form-input" type="email" id="reg-email" placeholder="you@example.com" autocomplete="email" required>
+        </div>
+        <div class="form-group">
+            <label>Пароль</label>
+            <input class="form-input" type="password" id="reg-password" placeholder="Мін. 6 символів" autocomplete="new-password" required>
+        </div>
+        <div class="form-error" id="reg-error"></div>
+        <button class="btn-main" type="submit" id="reg-btn">Зареєструватись</button>
+    </form>
+</div>
+
+<!-- ══════════════════ ONBOARDING: AGE (1/4) ══════════════════ -->
+<div id="screen-ob1" class="screen screen-ob">
+    <div class="ob-topbar">
+        <button class="ob-back" onclick="goBack()">←</button>
+        <span class="ob-step">1 з 4</span>
+    </div>
+    <div class="ob-progress"><div class="ob-progress-fill" style="width:25%"></div></div>
+
+    <h1 class="ob-title">Скільки тобі років?</h1>
+
+    <div class="drum-picker-wrap">
+        <div class="drum-picker-hl"></div>
+        <div class="drum-picker-fade-top"></div>
+        <div class="drum-picker" id="age-picker"></div>
+        <div class="drum-picker-fade-bottom"></div>
+    </div>
+
+    <div class="ob-bottom">
+        <button class="btn-main" onclick="submitAge()">Продовжити</button>
+        <button class="btn-skip" onclick="skipStep()">Пропустити</button>
+    </div>
+</div>
+
+<!-- ══════════════════ ONBOARDING: WEIGHT (2/4) ══════════════════ -->
+<div id="screen-ob2" class="screen screen-ob">
+    <div class="ob-topbar">
+        <button class="ob-back" onclick="goBack()">←</button>
+        <span class="ob-step">2 з 4</span>
+    </div>
+    <div class="ob-progress"><div class="ob-progress-fill" style="width:50%"></div></div>
+
+    <h1 class="ob-title">Яка зараз<br>твоя вага?</h1>
+
+    <div class="weight-unit-row">
+        <button class="unit-btn active" id="unit-kg" onclick="setWeightUnit('kg')">Кг</button>
+        <button class="unit-btn" id="unit-lbs" onclick="setWeightUnit('lbs')">Фунти</button>
+    </div>
+    <div class="weight-display"><span id="weight-val">70</span> <span id="weight-unit-label" style="font-size:28px;color:var(--muted)">Кг</span></div>
+    <div class="ruler-wrap">
+        <div class="ruler-center-line"></div>
+        <div class="ruler" id="weight-ruler"></div>
+    </div>
+
+    <div class="ob-bottom">
+        <button class="btn-main" onclick="submitWeight()">Продовжити</button>
+        <button class="btn-skip" onclick="skipStep()">Пропустити</button>
+    </div>
+</div>
+
+<!-- ══════════════════ ONBOARDING: GOAL (3/4) ══════════════════ -->
+<div id="screen-ob3" class="screen screen-ob">
+    <div class="ob-topbar">
+        <button class="ob-back" onclick="goBack()">←</button>
+        <span class="ob-step">3 з 4</span>
+    </div>
+    <div class="ob-progress"><div class="ob-progress-fill" style="width:75%"></div></div>
+
+    <h1 class="ob-title">Яка у тебе мета?</h1>
+
+    <div class="options-list">
+        <div class="option-item" id="goal-lose" onclick="selectGoal('lose')">
+            <span class="option-icon">🏃</span>
+            <span class="option-label">Схуднути</span>
+            <div class="option-radio"></div>
+        </div>
+        <div class="option-item" id="goal-maintain" onclick="selectGoal('maintain')">
+            <span class="option-icon">⚖️</span>
+            <span class="option-label">Підтримати вагу</span>
+            <div class="option-radio"></div>
+        </div>
+        <div class="option-item" id="goal-gain" onclick="selectGoal('gain')">
+            <span class="option-icon">💪</span>
+            <span class="option-label">Набрати вагу</span>
+            <div class="option-radio"></div>
+        </div>
+    </div>
+
+    <div class="ob-bottom">
+        <button class="btn-main" onclick="submitGoal()">Продовжити</button>
+        <button class="btn-skip" onclick="skipStep()">Пропустити</button>
+    </div>
+</div>
+
+<!-- ══════════════════ ONBOARDING: GENDER (4/4) ══════════════════ -->
+<div id="screen-ob4" class="screen screen-ob">
+    <div class="ob-topbar">
+        <button class="ob-back" onclick="goBack()">←</button>
+        <span class="ob-step">4 з 4</span>
+    </div>
+    <div class="ob-progress"><div class="ob-progress-fill" style="width:100%"></div></div>
+
+    <h1 class="ob-title">Яка у тебе стать?</h1>
+
+    <div class="options-list">
+        <div class="option-item" id="gender-female" onclick="selectGender('female')">
+            <span class="option-icon gender-icon">👩</span>
+            <span class="option-label">Жіноча</span>
+            <div class="option-radio"></div>
+        </div>
+        <div class="option-item" id="gender-male" onclick="selectGender('male')">
+            <span class="option-icon gender-icon">👨</span>
+            <span class="option-label">Чоловіча</span>
+            <div class="option-radio"></div>
+        </div>
+        <div class="option-item" id="gender-other" onclick="selectGender('other')">
+            <span class="option-icon gender-icon">⚧️</span>
+            <span class="option-label">Інша</span>
+            <div class="option-radio"></div>
+        </div>
+    </div>
+
+    <div class="ob-bottom">
+        <button class="btn-main" onclick="submitGender()">Завершити</button>
+        <button class="btn-skip" onclick="skipStep()">Пропустити</button>
+    </div>
+</div>
+
+<script>
+const API = `http://${window.location.hostname}:5001/api`;
+let obData = { age: 19, weight: 70, weightUnit: 'kg', goal: null, gender: null };
+let screenHistory = ['screen-auth'];
+let currentScreen = 'screen-auth';
+
+// ── Token helpers ──────────────────────────────────────────────
+function setToken(t) { localStorage.setItem('cg_token', t); }
+function getToken() { return localStorage.getItem('cg_token'); }
+
+// ── Screen navigation ─────────────────────────────────────────
+function showScreen(id) {
+    const current = document.getElementById(currentScreen);
+    const next = document.getElementById(id);
+    if (!next || id === currentScreen) return;
+    current.classList.add('exit-left');
+    current.classList.remove('active');
+    next.classList.add('active');
+    next.classList.remove('exit-left');
+    currentScreen = id;
+    setTimeout(() => current.classList.remove('exit-left'), 400);
+}
+
+function goBack() {
+    if (screenHistory.length < 2) return;
+    screenHistory.pop();
+    const prev = screenHistory[screenHistory.length - 1];
+    const current = document.getElementById(currentScreen);
+    current.style.transition = 'opacity .3s ease, transform .3s ease';
+    current.style.transform = 'translateX(60px)';
+    current.style.opacity = '0';
+    setTimeout(() => {
+        current.classList.remove('active');
+        current.style.transform = '';
+        current.style.opacity = '';
+        current.style.transition = '';
+    }, 300);
+    const prev_el = document.getElementById(prev);
+    prev_el.classList.add('active');
+    prev_el.style.transform = 'translateX(-60px)';
+    prev_el.style.opacity = '0';
+    requestAnimationFrame(() => {
+        prev_el.style.transition = 'opacity .3s ease, transform .3s ease';
+        prev_el.style.transform = '';
+        prev_el.style.opacity = '1';
+        setTimeout(() => { prev_el.style.transition = ''; prev_el.style.opacity = ''; }, 350);
+    });
+    currentScreen = prev;
+}
+
+function goToScreen(id) {
+    screenHistory.push(id);
+    showScreen(id);
+}
+
+// ── Auth tab switch ────────────────────────────────────────────
+function switchAuthTab(tab) {
+    document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+    document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+    document.getElementById('form-login').style.display = tab === 'login' ? 'flex' : 'none';
+    document.getElementById('form-register').style.display = tab === 'register' ? 'flex' : 'none';
+}
+
+// ── Auth ───────────────────────────────────────────────────────
+async function apiPost(path, body) {
+    const res = await fetch(API + path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    return { ok: res.ok, status: res.status, data: await res.json() };
+}
+
+async function handleLogin(e) {
+    e.preventDefault();
+    const btn = document.getElementById('login-btn');
+    const errEl = document.getElementById('login-error');
+    btn.disabled = true; btn.textContent = 'Завантаження...';
+    errEl.textContent = '';
+    const { ok, data } = await apiPost('/auth/login', {
+        email: document.getElementById('login-email').value,
+        password: document.getElementById('login-password').value
+    });
+    btn.disabled = false; btn.textContent = 'Увійти';
+    if (!ok) { errEl.textContent = data.error || 'Помилка входу'; return; }
+    setToken(data.token);
+    if (data.onboarding_done) {
+        window.location.href = 'home.html';
+    } else {
+        initAgePicker();
+        goToScreen('screen-ob1');
+    }
+}
+
+async function handleRegister(e) {
+    e.preventDefault();
+    const btn = document.getElementById('reg-btn');
+    const errEl = document.getElementById('reg-error');
+    btn.disabled = true; btn.textContent = 'Завантаження...';
+    errEl.textContent = '';
+    const { ok, data } = await apiPost('/auth/register', {
+        email: document.getElementById('reg-email').value,
+        password: document.getElementById('reg-password').value,
+        name: document.getElementById('reg-name').value
+    });
+    btn.disabled = false; btn.textContent = 'Зареєструватись';
+    if (!ok) { errEl.textContent = data.error || 'Помилка реєстрації'; return; }
+    setToken(data.token);
+    initAgePicker();
+    goToScreen('screen-ob1');
+}
+
+// ── AGE PICKER ─────────────────────────────────────────────────
+function initAgePicker() {
+    const picker = document.getElementById('age-picker');
+    picker.innerHTML = '';
+    const min = 10, max = 99, initial = 19;
+
+    // Padding items
+    for (let i = 0; i < 2; i++) {
+        const el = document.createElement('div');
+        el.className = 'drum-item'; el.textContent = '';
+        picker.appendChild(el);
+    }
+    for (let age = min; age <= max; age++) {
+        const el = document.createElement('div');
+        el.className = 'drum-item';
+        el.textContent = age;
+        el.dataset.age = age;
+        picker.appendChild(el);
+    }
+    for (let i = 0; i < 2; i++) {
+        const el = document.createElement('div');
+        el.className = 'drum-item'; el.textContent = '';
+        picker.appendChild(el);
+    }
+
+    // Scroll to initial
+    const itemH = 64;
+    picker.scrollTop = (initial - min) * itemH;
+    updatePickerHighlight();
+
+    picker.addEventListener('scroll', () => {
+        clearTimeout(picker._st);
+        updatePickerHighlight();
+        picker._st = setTimeout(() => snapPicker(picker, min, itemH), 80);
+    });
+}
+
+function updatePickerHighlight() {
+    const picker = document.getElementById('age-picker');
+    const itemH = 64;
+    const centerIdx = Math.round(picker.scrollTop / itemH);
+    const items = picker.querySelectorAll('.drum-item[data-age]');
+    items.forEach((el, i) => {
+        el.classList.remove('center', 'near');
+        if (i === centerIdx) el.classList.add('center');
+        else if (Math.abs(i - centerIdx) === 1) el.classList.add('near');
+    });
+    const age = parseInt(items[centerIdx]?.dataset.age);
+    if (!isNaN(age)) obData.age = age;
+}
+
+function snapPicker(picker, min, itemH) {
+    const idx = Math.round(picker.scrollTop / itemH);
+    picker.scrollTo({ top: idx * itemH, behavior: 'smooth' });
+}
+
+function submitAge() { goToScreen('screen-ob2'); initRuler(); }
+
+// ── WEIGHT RULER ───────────────────────────────────────────────
+function setWeightUnit(unit) {
+    obData.weightUnit = unit;
+    document.getElementById('unit-kg').classList.toggle('active', unit === 'kg');
+    document.getElementById('unit-lbs').classList.toggle('active', unit === 'lbs');
+    document.getElementById('weight-unit-label').textContent = unit === 'kg' ? 'Кг' : 'фнт';
+    initRuler();
+}
+
+function initRuler() {
+    const ruler = document.getElementById('weight-ruler');
+    ruler.innerHTML = '';
+    const isKg = obData.weightUnit === 'kg';
+    const min = isKg ? 30 : 66, max = isKg ? 200 : 440;
+    const initial = isKg ? (obData.weight || 70) : Math.round(obData.weight * 2.205 || 154);
+
+    for (let v = min; v <= max; v++) {
+        const tick = document.createElement('div');
+        const mod = v % 10;
+        tick.className = 'ruler-tick' + (mod === 0 ? ' major' : mod === 5 ? ' minor' : ' micro');
+        const t = document.createElement('div');
+        t.className = 'tick';
+        tick.appendChild(t);
+        if (mod === 0) {
+            const lbl = document.createElement('div');
+            lbl.className = 'tick-label'; lbl.textContent = v;
+            tick.appendChild(lbl);
+        }
+        ruler.appendChild(tick);
+    }
+
+    document.getElementById('weight-val').textContent = initial;
+
+    const tickW = 10;
+    ruler.scrollLeft = (initial - min) * tickW;
+
+    ruler.addEventListener('scroll', () => {
+        clearTimeout(ruler._st);
+        const v = Math.round(ruler.scrollLeft / tickW) + min;
+        document.getElementById('weight-val').textContent = v;
+        if (obData.weightUnit === 'kg') obData.weight = v;
+        else obData.weight = Math.round(v / 2.205 * 10) / 10;
+        ruler._st = setTimeout(() => {
+            const snapped = Math.round(ruler.scrollLeft / tickW) * tickW;
+            ruler.scrollTo({ left: snapped, behavior: 'smooth' });
+        }, 80);
+    });
+}
+
+function submitWeight() { goToScreen('screen-ob3'); }
+
+// ── GOAL ───────────────────────────────────────────────────────
+function selectGoal(g) {
+    obData.goal = g;
+    ['lose', 'maintain', 'gain'].forEach(id => {
+        document.getElementById('goal-' + id).classList.toggle('selected', id === g);
+    });
+}
+
+function submitGoal() {
+    if (!obData.goal) { selectGoal('maintain'); }
+    goToScreen('screen-ob4');
+}
+
+// ── GENDER ─────────────────────────────────────────────────────
+function selectGender(g) {
+    obData.gender = g;
+    ['female', 'male', 'other'].forEach(id => {
+        document.getElementById('gender-' + id).classList.toggle('selected', id === g);
+    });
+}
+
+async function submitGender() {
+    if (!obData.gender) selectGender('other');
+    await saveOnboarding();
+}
+
+async function skipStep() {
+    const stepMap = {
+        'screen-ob1': () => { goToScreen('screen-ob2'); initRuler(); },
+        'screen-ob2': () => goToScreen('screen-ob3'),
+        'screen-ob3': () => goToScreen('screen-ob4'),
+        'screen-ob4': () => saveOnboarding()
+    };
+    const fn = stepMap[currentScreen];
+    if (fn) await fn();
+}
+
+async function saveOnboarding() {
+    const token = getToken();
+    if (!token) { window.location.href = 'index.html'; return; }
+    await fetch(API + '/user/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({
+            age: obData.age,
+            weight: obData.weight,
+            goal: obData.goal || 'maintain',
+            gender: obData.gender || 'other',
+            onboarding_done: 1
+        })
+    });
+    window.location.href = 'home.html';
+}
+
+// ── Init: redirect if already logged in ───────────────────────
+(async () => {
+    const token = getToken();
+    if (!token) return;
+    const res = await fetch(API + '/user/me', {
+        headers: { 'Authorization': 'Bearer ' + token }
+    }).catch(() => null);
+    if (!res || !res.ok) { localStorage.removeItem('cg_token'); return; }
+    const user = await res.json();
+    if (user.onboarding_done) {
+        window.location.href = 'home.html';
+    } else {
+        initAgePicker();
+        // skip straight to onboarding (already registered)
+        document.getElementById('screen-auth').classList.remove('active');
+        document.getElementById('screen-ob1').classList.add('active');
+        currentScreen = 'screen-ob1';
+        screenHistory = ['screen-ob1'];
+    }
+})();
+</script>
 </body>
 </html>
