@@ -26,6 +26,9 @@ def row_to_log(row):
     r['total_protein']  = round(r['protein']  * factor, 1)
     r['total_carbs']    = round(r['carbs']    * factor, 1)
     r['total_fat']      = round(r['fat']      * factor, 1)
+    r['total_fiber']    = round((r.get('fiber') or 0) * factor, 1)
+    r['total_sugar']    = round((r.get('sugar') or 0) * factor, 1)
+    r['total_water']    = round((r.get('water') or 0) * factor, 1)
     return r
 
 
@@ -63,8 +66,13 @@ def add_food():
     protein     = data.get('protein', 0)
     carbs       = data.get('carbs', 0)
     fat         = data.get('fat', 0)
+    fiber       = data.get('fiber', 0)
+    sugar       = data.get('sugar', 0)
+    water       = data.get('water', 0)
     unit        = data.get('unit', 'г')
     unit_weight = data.get('unit_weight', 100)
+    nutrition_basis = data.get('nutrition_basis', 'serving')
+    default_qty = data.get('default_qty', unit_weight)
 
     if not name:
         return jsonify({'error': "Назва обов'язкова"}), 400
@@ -76,14 +84,21 @@ def add_food():
         protein     = float(protein)
         carbs       = float(carbs)
         fat         = float(fat)
+        fiber       = float(fiber)
+        sugar       = float(sugar)
+        water       = float(water)
         unit_weight = float(unit_weight)
+        default_qty = float(default_qty)
     except (ValueError, TypeError):
         return jsonify({'error': 'Числові значення некоректні'}), 400
 
+    if nutrition_basis not in ('serving', '100g', '100ml', 'piece'):
+        nutrition_basis = 'serving'
+
     cursor = query_commit(
-        'INSERT INTO foods (name, calories, protein, carbs, fat, unit, unit_weight, is_custom, created_by) '
-        'VALUES (?,?,?,?,?,?,?,1,?)',
-        (name, calories, protein, carbs, fat, unit, unit_weight, uid)
+        'INSERT INTO foods (name, calories, protein, carbs, fat, fiber, sugar, water, unit, unit_weight, nutrition_basis, default_qty, is_custom, created_by) '
+        'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1,?)',
+        (name, calories, protein, carbs, fat, fiber, sugar, water, unit, unit_weight, nutrition_basis, default_qty, uid)
     )
     food = query('SELECT * FROM foods WHERE id = ?', (cursor.lastrowid,)).fetchone()
     return jsonify(dict(food)), 201
@@ -114,7 +129,7 @@ def get_log():
     date = request.args.get('date', datetime.date.today().isoformat())
     rows = query('''
         SELECT fl.id, fl.food_id, fl.quantity, fl.meal_type, fl.date,
-               f.name, f.calories, f.protein, f.carbs, f.fat, f.unit, f.unit_weight
+               f.name, f.calories, f.protein, f.carbs, f.fat, f.fiber, f.sugar, f.water, f.unit, f.unit_weight
         FROM food_logs fl
         JOIN foods f ON f.id = fl.food_id
         WHERE fl.user_id = ? AND fl.date = ?
@@ -176,34 +191,51 @@ def get_stats():
 
     date = request.args.get('date', datetime.date.today().isoformat())
     rows = query('''
-        SELECT fl.quantity, f.calories, f.protein, f.carbs, f.fat, f.unit_weight
+        SELECT fl.quantity, f.calories, f.protein, f.carbs, f.fat, f.fiber, f.sugar, f.water, f.unit_weight
         FROM food_logs fl
         JOIN foods f ON f.id = fl.food_id
         WHERE fl.user_id = ? AND fl.date = ?
     ''', (uid, date)).fetchall()
 
-    totals = {'calories': 0.0, 'protein': 0.0, 'carbs': 0.0, 'fat': 0.0}
+    totals = {'calories': 0.0, 'protein': 0.0, 'carbs': 0.0, 'fat': 0.0, 'fiber': 0.0, 'sugar': 0.0, 'water': 0.0}
     for row in rows:
         factor = row['quantity'] / (row['unit_weight'] or 100)
         totals['calories'] += row['calories'] * factor
         totals['protein']  += row['protein']  * factor
         totals['carbs']    += row['carbs']    * factor
         totals['fat']      += row['fat']      * factor
+        totals['fiber']    += (row['fiber'] or 0) * factor
+        totals['sugar']    += (row['sugar'] or 0) * factor
+        totals['water']    += (row['water'] or 0) * factor
 
     totals = {k: round(v, 1) for k, v in totals.items()}
 
     user = query(
-        'SELECT calorie_goal, protein_goal, carbs_goal, fat_goal FROM users WHERE id = ?', (uid,)
+        'SELECT calorie_goal, protein_goal, carbs_goal, fat_goal, weight FROM users WHERE id = ?', (uid,)
     ).fetchone()
+    fiber_goal = 30
+    sugar_goal = 50
+    water_goal = max(1800, round((user['weight'] or 70) * 30)) if user else 2000
     if user:
         totals.update({
             'calorie_goal': user['calorie_goal'] or 2000,
             'protein_goal': user['protein_goal'] or 120,
             'carbs_goal':   user['carbs_goal']   or 250,
             'fat_goal':     user['fat_goal']      or 65,
+            'fiber_goal': fiber_goal,
+            'sugar_goal': sugar_goal,
+            'water_goal': water_goal,
         })
     else:
-        totals.update({'calorie_goal': 2000, 'protein_goal': 120, 'carbs_goal': 250, 'fat_goal': 65})
+        totals.update({
+            'calorie_goal': 2000,
+            'protein_goal': 120,
+            'carbs_goal': 250,
+            'fat_goal': 65,
+            'fiber_goal': 30,
+            'sugar_goal': 50,
+            'water_goal': 2000,
+        })
 
     return jsonify(totals)
 

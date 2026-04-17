@@ -42,10 +42,16 @@ def create_app():
     app.config['SUB_TRIAL_DAYS']  = int(os.getenv('SUBSCRIPTION_TRIAL_DAYS', '7'))
 
     # ── CORS ──────────────────────────────────────────────────────
-    origins = os.getenv('CORS_ORIGINS', '*').split(',')
-    CORS(app, origins=origins, supports_credentials=True,
-         allow_headers=['Content-Type', 'Authorization'],
-         methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+    cors_origins = os.getenv('CORS_ORIGINS', '*').strip()
+    if cors_origins == '*':
+        CORS(app, origins='*',
+             allow_headers=['Content-Type', 'Authorization'],
+             methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+    else:
+        origins = [o.strip() for o in cors_origins.split(',')]
+        CORS(app, origins=origins, supports_credentials=True,
+             allow_headers=['Content-Type', 'Authorization'],
+             methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
 
     init_db(app)
 

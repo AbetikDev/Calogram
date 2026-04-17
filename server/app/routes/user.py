@@ -20,25 +20,50 @@ def get_user_id():
         return None
 
 
-def calc_goals(age, weight, height, gender, goal):
-    h = height or 170
-    w = weight or 70
-    a = age or 25
+def estimate_height(age, gender):
+    age = age or 25
     if gender == 'female':
+        if age < 18:
+            return 162
+        return 166
+    if gender == 'male':
+        if age < 18:
+            return 173
+        return 178
+    return 172
+
+
+def calc_goals(age, weight, height, gender, goal):
+    h = float(height or estimate_height(age, gender))
+    w = float(weight or 70)
+    a = int(age or 25)
+    g = (gender or 'other').lower()
+    target = (goal or 'maintain').lower()
+
+    if g == 'female':
         bmr = 10 * w + 6.25 * h - 5 * a - 161
     else:
         bmr = 10 * w + 6.25 * h - 5 * a + 5
-    tdee = bmr * 1.55
-    if goal == 'lose':
-        calories = max(1200, int(tdee - 500))
-    elif goal == 'gain':
-        calories = int(tdee + 400)
+
+    activity_factor = 1.45 if a < 18 else 1.5
+    tdee = bmr * activity_factor
+
+    if target == 'lose':
+        calories = max(1400, int(tdee - max(280, w * 4.2)))
+        protein_ratio = 2.0
+        fat_ratio = 0.27
+    elif target == 'gain':
+        calories = int(tdee + max(240, w * 3.6))
+        protein_ratio = 1.85
+        fat_ratio = 0.24
     else:
         calories = int(tdee)
+        protein_ratio = 1.75
+        fat_ratio = 0.25
 
-    protein = int(w * 1.8)
-    fat = int(calories * 0.25 / 9)
-    carbs = int((calories - protein * 4 - fat * 9) / 4)
+    protein = max(90, int(round(w * protein_ratio)))
+    fat = max(45, int(round((calories * fat_ratio) / 9)))
+    carbs = max(90, int(round((calories - protein * 4 - fat * 9) / 4)))
     return calories, protein, carbs, fat
 
 
@@ -48,7 +73,7 @@ def me():
     if not uid:
         return jsonify({'error': 'Unauthorized'}), 401
     user = query(
-        'SELECT id, email, name, age, weight, height, gender, goal, '
+        'SELECT id, email, name, avatar, age, weight, height, gender, goal, '
         'calorie_goal, protein_goal, carbs_goal, fat_goal, onboarding_done '
         'FROM users WHERE id = ?', (uid,)
     ).fetchone()
@@ -64,7 +89,7 @@ def update_profile():
         return jsonify({'error': 'Unauthorized'}), 401
 
     data = request.get_json(silent=True) or {}
-    allowed = ['name', 'age', 'weight', 'height', 'gender', 'goal',
+    allowed = ['name', 'avatar', 'age', 'weight', 'height', 'gender', 'goal',
                'calorie_goal', 'protein_goal', 'carbs_goal', 'fat_goal', 'onboarding_done']
     updates = {k: data[k] for k in allowed if k in data}
 
@@ -91,7 +116,7 @@ def update_profile():
     query_commit(f'UPDATE users SET {set_clause} WHERE id = ?', values)
 
     user = query(
-        'SELECT id, email, name, age, weight, height, gender, goal, '
+        'SELECT id, email, name, avatar, age, weight, height, gender, goal, '
         'calorie_goal, protein_goal, carbs_goal, fat_goal, onboarding_done '
         'FROM users WHERE id = ?', (uid,)
     ).fetchone()

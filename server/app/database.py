@@ -132,6 +132,7 @@ _SCHEMA_SQLITE = '''
         email TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
         name TEXT DEFAULT '',
+        avatar TEXT DEFAULT '',
         age INTEGER,
         weight REAL,
         height REAL,
@@ -152,8 +153,13 @@ _SCHEMA_SQLITE = '''
         protein REAL DEFAULT 0,
         carbs REAL DEFAULT 0,
         fat REAL DEFAULT 0,
+        fiber REAL DEFAULT 0,
+        sugar REAL DEFAULT 0,
+        water REAL DEFAULT 0,
         unit TEXT DEFAULT 'г',
         unit_weight REAL DEFAULT 100,
+        nutrition_basis TEXT DEFAULT 'serving',
+        default_qty REAL DEFAULT 100,
         is_custom INTEGER DEFAULT 0,
         created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -179,6 +185,7 @@ _SCHEMA_MYSQL = '''
         email VARCHAR(255) UNIQUE NOT NULL,
         password_hash VARCHAR(255) NOT NULL,
         name VARCHAR(255) DEFAULT '',
+        avatar VARCHAR(255) DEFAULT '',
         age INT,
         weight FLOAT,
         height FLOAT,
@@ -199,8 +206,13 @@ _SCHEMA_MYSQL = '''
         protein FLOAT DEFAULT 0,
         carbs FLOAT DEFAULT 0,
         fat FLOAT DEFAULT 0,
+        fiber FLOAT DEFAULT 0,
+        sugar FLOAT DEFAULT 0,
+        water FLOAT DEFAULT 0,
         unit VARCHAR(20) DEFAULT 'г',
         unit_weight FLOAT DEFAULT 100,
+        nutrition_basis VARCHAR(20) DEFAULT 'serving',
+        default_qty FLOAT DEFAULT 100,
         is_custom TINYINT(1) DEFAULT 0,
         created_by INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -270,6 +282,7 @@ def init_db(app):
 
         schema = _SCHEMA_MYSQL if db_type == 'mysql' else _SCHEMA_SQLITE
         db_executescript(db, schema, db_type)
+        ensure_schema_updates(db, db_type)
 
         # Seed shared foods
         if db_type == 'mysql':
@@ -280,14 +293,45 @@ def init_db(app):
             existing = db.execute('SELECT COUNT(*) FROM foods WHERE is_custom = 0').fetchone()[0]
 
         if existing == 0:
+            seed_foods = [(*food, food[-1]) for food in _SEED_FOODS]
             db_executemany(
                 db,
-                'INSERT INTO foods (name, calories, protein, carbs, fat, unit, unit_weight, is_custom) '
-                'VALUES (?,?,?,?,?,?,?,0)',
-                _SEED_FOODS,
+                'INSERT INTO foods (name, calories, protein, carbs, fat, unit, unit_weight, nutrition_basis, default_qty, is_custom) '
+                "VALUES (?,?,?,?,?,?,?,'serving',?,0)",
+                seed_foods,
                 db_type
             )
 
         db.commit()
         db.close()
         app.teardown_appcontext(close_db)
+
+
+def ensure_schema_updates(db, db_type):
+    if db_type == 'mysql':
+        cursor = db.cursor()
+        cursor.execute("SHOW COLUMNS FROM users LIKE 'avatar'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE users ADD COLUMN avatar VARCHAR(255) DEFAULT ''")
+        for col in ('fiber', 'sugar', 'water'):
+            cursor.execute(f"SHOW COLUMNS FROM foods LIKE '{col}'")
+            if not cursor.fetchone():
+                cursor.execute(f"ALTER TABLE foods ADD COLUMN {col} FLOAT DEFAULT 0")
+        cursor.execute("SHOW COLUMNS FROM foods LIKE 'nutrition_basis'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE foods ADD COLUMN nutrition_basis VARCHAR(20) DEFAULT 'serving'")
+        cursor.execute("SHOW COLUMNS FROM foods LIKE 'default_qty'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE foods ADD COLUMN default_qty FLOAT DEFAULT 100")
+    else:
+        columns = [row[1] for row in db.execute("PRAGMA table_info(users)").fetchall()]
+        if 'avatar' not in columns:
+            db.execute("ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT ''")
+        food_columns = [row[1] for row in db.execute("PRAGMA table_info(foods)").fetchall()]
+        for col in ('fiber', 'sugar', 'water'):
+            if col not in food_columns:
+                db.execute(f"ALTER TABLE foods ADD COLUMN {col} REAL DEFAULT 0")
+        if 'nutrition_basis' not in food_columns:
+            db.execute("ALTER TABLE foods ADD COLUMN nutrition_basis TEXT DEFAULT 'serving'")
+        if 'default_qty' not in food_columns:
+            db.execute("ALTER TABLE foods ADD COLUMN default_qty REAL DEFAULT 100")

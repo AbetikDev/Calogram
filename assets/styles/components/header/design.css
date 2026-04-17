@@ -1,69 +1,71 @@
 header {
     position: fixed;
     top: 0;
-    left: 0;
-    right: 0;
-    height: 52px;
-    width: 100%;
-    background: transparent;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 60px;
+    width: min(100%, 480px);
+    background: rgba(20, 30, 46, 0.74);
+    backdrop-filter: blur(14px);
     display: flex;
-    flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    padding: 0 16px;
+    padding: 0 14px;
     z-index: 1000;
     box-sizing: border-box;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .app_name {
-    font-size: 15px;
-    font-weight: 800;
-    color: var(--text_color_w);
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 2.6px;
+    color: #fff;
     margin: 0;
-    letter-spacing: 2.5px;
     text-transform: uppercase;
 }
 
-.days {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    color: var(--text_color_w);
-    transition: opacity 0.2s ease;
-}
-
-.days:hover { opacity: 0.75; }
-
-.days_img {
-    width: 20px;
-    height: auto;
-    filter: brightness(0) invert(1);
-}
-
-.calc_days {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text_color_w);
-}
-
+.streak-badge,
+.date-badge,
+.days,
 .date {
+    min-width: 58px;
     display: flex;
     align-items: center;
-    gap: 5px;
-    color: var(--text_color_w);
-    transition: opacity 0.2s ease;
+    justify-content: center;
+    gap: 6px;
+    color: rgba(255, 255, 255, 0.92);
+    padding: 8px 10px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: background .2s ease, transform .12s ease;
+    text-decoration: none;
 }
 
-.date:hover { opacity: 0.75; }
+.streak-badge:hover,
+.date-badge:hover,
+.days:hover,
+.date:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
 
+.days:active,
+.date:active {
+    transform: scale(.96);
+}
+
+.days_img,
 .calendar {
-    width: 16px;
-    height: auto;
+    width: 15px;
+    height: 15px;
     filter: brightness(0) invert(1);
+    opacity: 0.88;
 }
 
+.calc_days,
 .date_text {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text_color_w);
+    font-size: 12px;
+    font-weight: 800;
+    color: #fff;
 }

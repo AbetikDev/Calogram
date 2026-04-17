@@ -139,30 +139,32 @@
             position: absolute; left: 0; right: 0;
             top: 50%; transform: translateY(-50%);
             height: 64px; background: var(--accent);
-            border-radius: 16px; z-index: 0; opacity: .15;
+            border-radius: 16px; z-index: 0; opacity: .22;
+            box-shadow: 0 0 0 1.5px rgba(62,207,142,.35);
         }
         .drum-picker {
             width: 100%; height: 100%;
-            overflow: hidden; scroll-snap-type: y mandatory;
+            overflow-y: scroll;
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
             scrollbar-width: none; position: relative; z-index: 1;
+            cursor: grab;
         }
         .drum-picker::-webkit-scrollbar { display: none; }
         .drum-item {
             height: 64px; display: flex; align-items: center; justify-content: center;
-            font-size: 38px; font-weight: 700; color: #ccc;
+            font-size: 36px; font-weight: 700; color: #bbb;
             scroll-snap-align: center; cursor: pointer;
-            transition: color .15s, font-size .15s;
-            user-select: none;
+            transition: color .15s, font-size .15s, opacity .15s;
+            user-select: none; opacity: .55;
         }
-        .drum-item.center { color: var(--text); font-size: 52px; }
-        .drum-item.near { color: #888; font-size: 42px; }
+        .drum-item.center { color: var(--text); font-size: 50px; opacity: 1; font-weight: 900; }
+        .drum-item.near { color: #666; font-size: 40px; opacity: .8; }
         .drum-picker-fade-top, .drum-picker-fade-bottom {
             position: absolute; left: 0; right: 0; height: 72px; z-index: 2; pointer-events: none;
         }
-        .drum-picker-fade-top { top: 0; background: linear-gradient(to bottom, #fff 40%, transparent); }
-        .drum-picker-fade-bottom { bottom: 0; background: linear-gradient(to top, #fff 40%, transparent); }
+        .drum-picker-fade-top { top: 0; background: linear-gradient(to bottom, #fff 55%, transparent); }
+        .drum-picker-fade-bottom { bottom: 0; background: linear-gradient(to top, #fff 55%, transparent); }
 
         /* ── Ruler (weight) ──────────────────────── */
         .weight-display {
@@ -180,15 +182,16 @@
         .unit-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
         .ruler-wrap {
-            width: 100%; overflow: hidden; position: relative; height: 80px;
+            width: 100%; overflow: hidden; position: relative; height: 90px;
             margin-bottom: 40px;
         }
         .ruler {
             display: flex; align-items: flex-end; padding-bottom: 8px;
-            overflow-x: scroll; scroll-snap-type: x mandatory;
+            overflow-x: scroll;
             -webkit-overflow-scrolling: touch; scrollbar-width: none;
             padding-left: calc(50% - 1px); padding-right: calc(50% - 1px);
-            gap: 0; width: 100%;
+            overscroll-behavior-x: contain;
+            gap: 0; width: 100%; cursor: grab;
         }
         .ruler::-webkit-scrollbar { display: none; }
         .ruler-tick {
@@ -196,19 +199,19 @@
             display: flex; flex-direction: column; align-items: center; gap: 4px;
         }
         .ruler-tick .tick {
-            width: 1.5px; background: var(--border); border-radius: 2px;
+            width: 1.5px; background: #c5cad2; border-radius: 2px;
         }
-        .ruler-tick.major .tick { height: 40px; background: var(--muted); }
-        .ruler-tick.minor .tick { height: 24px; }
-        .ruler-tick.micro .tick { height: 16px; }
-        .ruler-tick.center-tick .tick { background: var(--accent) !important; height: 48px !important; width: 2px; }
+        .ruler-tick.major .tick { height: 40px; background: #6b7280; width: 2px; }
+        .ruler-tick.minor .tick { height: 24px; background: #9ca3af; }
+        .ruler-tick.micro .tick { height: 16px; background: #d1d5db; }
+        .ruler-tick.center-tick .tick { background: var(--accent) !important; height: 52px !important; width: 2.5px; }
         .ruler-tick .tick-label {
-            font-size: 11px; font-weight: 600; color: var(--muted);
+            font-size: 11px; font-weight: 700; color: #6b7280;
         }
         .ruler-center-line {
-            position: absolute; top: 0; left: 50%; width: 2px; height: 56px;
+            position: absolute; top: 0; left: 50%; width: 2.5px; height: 60px;
             background: var(--accent); transform: translateX(-50%); z-index: 2; pointer-events: none;
-            border-radius: 2px;
+            border-radius: 2px; box-shadow: 0 0 8px rgba(62,207,142,.55);
         }
 
         /* ── Goal & Gender options ──────────────── */
@@ -416,7 +419,7 @@
 </div>
 
 <script>
-const API = `http://${window.location.hostname}:5001/api`;
+const API = `http://${window.location.hostname}:28016/api`;
 let obData = { age: 19, weight: 70, weightUnit: 'kg', goal: null, gender: null };
 let screenHistory = ['screen-auth'];
 let currentScreen = 'screen-auth';
@@ -562,6 +565,36 @@ function initAgePicker() {
         updatePickerHighlight();
         picker._st = setTimeout(() => snapPicker(picker, min, itemH), 80);
     });
+
+    // ── Mouse wheel support ───────────────────────────────────────
+    picker.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? 1 : -1;
+        const idx = Math.round(picker.scrollTop / itemH) + delta;
+        picker.scrollTo({ top: idx * itemH, behavior: 'smooth' });
+    }, { passive: false });
+
+    // ── Touch swipe support ───────────────────────────────────────
+    let _touchStartY = 0;
+    let _touchLastY = 0;
+    picker.addEventListener('touchstart', (e) => {
+        _touchStartY = e.touches[0].clientY;
+        _touchLastY  = _touchStartY;
+        clearTimeout(picker._st);
+    }, { passive: true });
+
+    picker.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        const y = e.touches[0].clientY;
+        const diff = _touchLastY - y;
+        _touchLastY = y;
+        picker.scrollTop += diff;
+        updatePickerHighlight();
+    }, { passive: false });
+
+    picker.addEventListener('touchend', () => {
+        picker._st = setTimeout(() => snapPicker(picker, min, itemH), 60);
+    }, { passive: true });
 }
 
 function updatePickerHighlight() {
@@ -632,6 +665,39 @@ function initRuler() {
             ruler.scrollTo({ left: snapped, behavior: 'smooth' });
         }, 80);
     });
+
+    // ── Mouse wheel → horizontal scroll ──────────────────────────
+    ruler.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = e.deltaY !== 0 ? e.deltaY : e.deltaX;
+        const steps = delta > 0 ? 1 : -1;
+        const snapped = (Math.round(ruler.scrollLeft / tickW) + steps) * tickW;
+        ruler.scrollTo({ left: snapped, behavior: 'smooth' });
+    }, { passive: false });
+
+    // ── Touch swipe → horizontal scroll ──────────────────────────
+    let _tStartX = 0, _tLastX = 0;
+    ruler.addEventListener('touchstart', (e) => {
+        _tStartX = e.touches[0].clientX;
+        _tLastX  = _tStartX;
+        clearTimeout(ruler._st);
+    }, { passive: true });
+
+    ruler.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        const x = e.touches[0].clientX;
+        ruler.scrollLeft += _tLastX - x;
+        _tLastX = x;
+        const v = Math.round(ruler.scrollLeft / tickW) + min;
+        document.getElementById('weight-val').textContent = v;
+    }, { passive: false });
+
+    ruler.addEventListener('touchend', () => {
+        ruler._st = setTimeout(() => {
+            const snapped = Math.round(ruler.scrollLeft / tickW) * tickW;
+            ruler.scrollTo({ left: snapped, behavior: 'smooth' });
+        }, 60);
+    }, { passive: true });
 }
 
 function submitWeight() { goToScreen('screen-ob3'); }
