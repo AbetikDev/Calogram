@@ -16,6 +16,11 @@ import subprocess
 import threading
 import time
 
+from server.app import create_app
+
+
+app = create_app()
+
 # ── Colorama (optional, install with: pip install colorama) ───────────────────
 try:
     from colorama import init as _colorama_init, Fore, Style

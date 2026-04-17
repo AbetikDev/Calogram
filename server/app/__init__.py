@@ -21,8 +21,11 @@ def create_app():
     app.config['DB_TYPE'] = db_type
 
     if db_type == 'sqlite':
+        default_db_path = 'calogram.db'
+        if os.getenv('VERCEL'):
+            default_db_path = '/tmp/calogram.db'
         app.config['DATABASE'] = os.path.join(
-            os.path.dirname(__file__), '..', os.getenv('DATABASE_PATH', 'calogram.db')
+            os.path.dirname(__file__), '..', os.getenv('DATABASE_PATH', default_db_path)
         )
     elif db_type == 'mysql':
         app.config['MYSQL'] = {
