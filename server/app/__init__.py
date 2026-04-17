@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
@@ -11,7 +11,7 @@ from .routes.user import user_bp
 from .routes.food import food_bp
 
 
-def create_app():
+def create_app(frontend_root=None):
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
     app.config['JWT_SECRET'] = os.getenv('JWT_SECRET', 'jwt-secret-key')
@@ -65,6 +65,27 @@ def create_app():
     @app.route('/api/ping')
     def ping():
         return {'status': 'ok', 'message': 'Calogram API is running', 'db': db_type}
+
+    # ── Serve frontend static files ───────────────────────────────
+    if frontend_root:
+        @app.route('/')
+        def serve_index():
+            return send_from_directory(frontend_root, 'index.html')
+
+        @app.route('/home.html')
+        def serve_home():
+            return send_from_directory(frontend_root, 'home.html')
+
+        @app.route('/assets/<path:filename>')
+        def serve_assets(filename):
+            return send_from_directory(os.path.join(frontend_root, 'assets'), filename)
+
+        @app.route('/<path:path>')
+        def serve_catchall(path):
+            fp = os.path.join(frontend_root, path)
+            if os.path.isfile(fp):
+                return send_from_directory(frontend_root, path)
+            return send_from_directory(frontend_root, 'index.html')
 
     @app.route('/api/subscription/plans')
     def subscription_plans():

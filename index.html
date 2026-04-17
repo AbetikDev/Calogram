@@ -419,7 +419,9 @@
 </div>
 
 <script>
-const API = `http://${window.location.hostname}:28016/api`;
+const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? `http://${window.location.hostname}:28016/api`
+    : `${window.location.origin}/api`;
 let obData = { age: 19, weight: 70, weightUnit: 'kg', goal: null, gender: null };
 let screenHistory = ['screen-auth'];
 let currentScreen = 'screen-auth';

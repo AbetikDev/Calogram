@@ -824,7 +824,9 @@ HOME_HTML = """<!DOCTYPE html>
 </div>
 
 <script>
-const API = `http://${window.location.hostname}:28016/api`;
+const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? `http://${window.location.hostname}:28016/api`
+    : `${window.location.origin}/api`;
 let token = localStorage.getItem('cg_token');
 let userData = null;
 let allFoods = [];

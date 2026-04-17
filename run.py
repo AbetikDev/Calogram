@@ -49,7 +49,7 @@ try:
 except ImportError:
     _env = {}
 
-FLASK_PORT    = _env.get('FLASK_PORT',    os.getenv('FLASK_PORT',    '5001'))
+FLASK_PORT    = _env.get('FLASK_PORT',    os.getenv('PORT', os.getenv('FLASK_PORT', '10000')))
 FRONTEND_PORT = _env.get('FRONTEND_PORT', os.getenv('FRONTEND_PORT', '5500'))
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
